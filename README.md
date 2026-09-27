@@ -1,110 +1,96 @@
-# Job Finder and Application Pipeline
+# Job Pipeline
 
-This repository contains a **modular job‑search pipeline** built with Python and
-FastAPI, together with a tiny automation framework that processes a local issue
-tracker (`issues.md`).
+This repository is initialized from the product plan in
+`./plan.md`.
 
-## Quick start (local development)
+The goal is a 4-stage pipeline that discovers jobs, prepares tailored application
+material, and sends a review-ready package to the candidate.
+
+## Pipeline summary (from `plan.md`)
+
+1. **Stage 1 — Job Scraping and Filtering**
+   - Collect postings from job boards using configurable keywords.
+   - Score each job for fit and route into accepted/rejected queues.
+   - Persist jobs with metadata (including base resume path and notes).
+2. **Stage 2 — Matching Resume Generation**
+   - Adapt a base LaTeX resume to each accepted job description.
+   - Run an ATS-like feedback loop until the resume is marked ready.
+3. **Stage 3 — Matching Cover Letter Generation**
+   - Generate a company/job-specific cover letter from resume + job context.
+   - Follow a repeatable narrative structure with configurable context inputs.
+4. **Stage 4 — Candidate Delivery Package**
+   - Compile job link, description, resume, and cover letter into one message.
+   - Send via external messaging platform and track sent/applied states.
+
+## Configuration and running each stage
+
+> **Current state:** this repository currently contains scaffolding,
+> placeholders, and automation utilities. The sections below document how each
+> stage is intended to be configured/run and where to integrate implementation.
+
+### Shared setup
 
 ```bash
-# Create a virtual environment and activate it
+cd ./job-pipeline
 python -m venv .venv
 source .venv/bin/activate
-
-# Install the project's dependencies
-pip install -r job-pipeline/requirements.txt
-
-# Run the FastAPI app (if you want to explore the API)
-uvicorn job-pipeline/app.main:app --reload
+pip install -r requirements.txt
 ```
 
-## Running the automation loop
+### Stage 1 — Job Scraping and Filtering
 
-The automation utilities live under `job-pipeline/automation`.  The convenient
-namespace package `automation` (see `automation/__init__.py`) makes it possible
-to run the loop from the repository root:
+- **Configure:** job board sources, search keywords, and match-score threshold.
+- **Run target:** ingestion endpoint in
+  `./job-pipeline/app/main.py`.
 
 ```bash
-python -m automation.run_issue_loop
+cd ./job-pipeline
+uvicorn app.main:app --reload
+# then call POST /ingest with source_url
 ```
 
-During the first run you will see the message
+### Stage 2 — Matching Resume Generation
 
-```
-Skipping git commit/push – not a git repository.
-```
+- **Configure:** base resume path, keyword/experience weighting, ATS acceptance
+  threshold, and retry loop limits.
+- **Run target:** implement stage logic under
+  `./job-pipeline/src/` and expose an
+  entrypoint (API route, CLI, or worker) consistent with Stage 1 patterns.
 
-that is printed because the repository has not been initialised as a Git repo.
-If you want the automation to **commit and push** the generated placeholder
-implementation files, you need a Git repository with a remote.
+### Stage 3 — Matching Cover Letter Generation
 
-## Initialising a GitHub repository and pushing the code
+- **Configure:** story-building context, company-research sources, and output
+  format constraints per job board/company.
+- **Run target:** implement under
+  `./job-pipeline/src/` with a
+  dedicated module/entrypoint that consumes Stage 2-ready jobs.
 
-1. **Create a new repository on GitHub** – go to https://github.com/new and
-   choose a name (e.g. `job-pipeline`).  Do **not** initialise it with a README,
-   `.gitignore` or license – we will push our existing files.
+### Stage 4 — Candidate Delivery Package
 
-2. **Run the helper script** that ships with this project (added in this
-   commit) to initialise a local Git repository and push it to the remote:
+- **Configure:** messaging provider (e.g., WhatsApp/Telegram/Signal), delivery
+  channel credentials, and sent/applied status tracking fields.
+- **Run target:** implement a dispatch module in
+  `./job-pipeline/src/` that packages
+  Stage 3 output and updates tracking state after send.
 
-   ```bash
-   # Make the script executable (only needed once)
-   chmod +x scripts/init_git_repo.sh
+## Repository context
 
-   # Replace the URL below with the SSH or HTTPS URL of your new GitHub repo
-   ./scripts/init_git_repo.sh git@github.com:YOUR_USERNAME/job-pipeline.git
-   ```
+- `./plan.md`
+  - Product blueprint for all 4 stages and expected behavior.
+- `./job-pipeline/`
+  - Main Python project (FastAPI app, source modules, tests, and requirements).
+- `./automation/`
+  - Namespace wrapper so automation modules are importable from repository root.
+- `./job-pipeline/automation/`
+  - Local issue-tracker automation (`issues.md` processing loop).
+- `./scripts/`
+  - Utility scripts for repository bootstrap tasks.
 
-   The script will:
+## Development checks
 
-   * `git init` the repository (if not already initialised)
-   * add all files and create an initial commit
-   * set the default branch to `main`
-   * add the remote `origin` pointing at the URL you provided
-   * push the commit to GitHub
-
-   After a successful push you will see something like:
-
-   ```
-   Repository successfully pushed to git@github.com:YOUR_USERNAME/job-pipeline.git
-   ```
-
-3. Verify on GitHub that the files have been uploaded and that the repository
-   contains a `main` branch.
-
-## Using GitHub Issues instead of the local `issues.md`
-
-The current implementation uses a simple markdown file (`job-pipeline/issues.md`)
-as an issue tracker.  This design makes the automation self‑contained and works
-without any external service, which is convenient for the kata‑style tests.
-
-If you prefer to use **GitHub Issues**, you will need a GitHub repository –
-issues are always associated with a repository.  The automation code would have
-to be extended to talk to the GitHub REST or GraphQL API, for example:
-
-* **Listing open issues** – GET `/repos/:owner/:repo/issues?state=open`
-* **Creating a comment** – POST `/repos/:owner/:repo/issues/:issue_number/comments`
-* **Closing an issue** – PATCH `/repos/:owner/:repo/issues/:issue_number` with
-  `{"state": "closed"}`
-
-Authentication is performed with a **personal access token** (PAT) that must be
-provided via the `GITHUB_TOKEN` environment variable.  A minimal wrapper could
-be added to `job-pipeline/automation/issue_tracker.py` that switches between the
-local markdown file and the GitHub API based on the presence of that token.
-
-> **Key point:** *You cannot use GitHub Issues without having a Git repository*
-> because the issues are stored on GitHub **per‑repository**.  The automation
-> script already expects a `.git` directory for committing changes; after you
-> push the repository to GitHub you can safely replace the local issue handling
-> with the API‑based approach if desired.
-
-## Contributing
-
-Feel free to open issues or submit pull requests on GitHub.  When contributing
-code, make sure the test suite continues to pass:
+Run existing tests from the Python project directory:
 
 ```bash
+cd ./job-pipeline
 pytest -q
 ```
-
-Happy hacking!
