@@ -4,25 +4,28 @@
 Current work focus, recent changes, next steps, and active decisions for the project.
 
 ## Current Work Focus
-Initializing and maintaining the memory bank; the repository itself is at the scaffolding-complete stage. All 4 pipeline stages are still placeholder implementations awaiting real logic per `plan.md`.
+Stage 1–4 design plans are agreed and committed; implementation of Stage 1 is the immediate next step.
 
 ## Recent Changes
-- Memory bank files created and populated from repository context (this task).
-- Root `README.md` rewritten to be plan-driven and stage-oriented (PR #2, commit `6e4eea8`).
-- Automation issue tracker built: `job-pipeline/automation/issue_tracker.py` + `run_issue_loop.py`; Issues #1 (HLD), #2 (LLD), #3 (scaffolding) all marked Done in `issues.md`.
-- Namespace wrapper `/e/jobs/automation/__init__.py` added so `automation.*` imports resolve from repo root.
+- Stage 1 design plan committed and pushed (`19dcb33`): `docs/design/stage1-job-scraping-and-filtering.md`.
+- Stage 2–4 design plan committed and pushed (`01c1989`): `docs/design/stage2-4-plan.md`.
+- Confirmed Stage 1 decisions: JSON-API boards now + HTML-scraper stub later (plugin pattern); SQLite queues; deterministic scoring now + pluggable LLM backend later; CLI + FastAPI tooling; JSON config with pydantic validation.
+- Confirmed Stage 2–4 decisions: OpenAI-compatible LLM behind shared `src/llm/`; Telegram Bot API for Stage 4; Tavily research now → Zyte later → DuckDuckGo/firecrawl fallbacks; section-targeted LaTeX editing; ATS loop capped by threshold + max iterations; plain-text cover letters; `sent` status in the same SQLite store.
 
 ## Next Steps
-1. **Stage 1**: implement real scraping in `src/ingestion/ingest.py`, normalization/enrichment in `src/parsing/parse.py`, configurable match scoring in `src/matching/match.py`; add persistent accepted/rejected queues + interactive tooling; collect required per-job fields and metadata (base resume path, notes).
-2. **Stage 2**: LaTeX minimal-edit resume generation + ATS substage feedback loop with its own resume-ready queue.
-3. **Stage 3**: company research + cover letter generation following the fixed narrative pattern from `plan.md`.
-4. **Stage 4**: delivery-package compilation + messaging-platform integration + sent/applied tracking with candidate notes.
-5. Add config layer (keywords, sources, thresholds, base resume path, messaging credentials) — `python-dotenv` is already a dependency.
+1. **Implement Stage 1** per `docs/design/stage1-job-scraping-and-filtering.md`: config layer + models, ingestion dispatch + fetchers (Remotive/RemoteOK JSON-API, HTML stub), parsing normalization, deterministic scoring, SQLite queue store, CLI + FastAPI tooling, tests.
+2. **Shared foundation for Stages 2–4** per `docs/design/stage2-4-plan.md`: `src/llm/` OpenAI-compatible abstraction + config extension (`stage2`/`stage3`/`stage4` sections).
+3. **Stage 2**: LaTeX minimal-edit resume generation + ATS substage feedback loop with its own resume-ready queue status.
+4. **Stage 3**: Tavily research chain + cover letter generation following the fixed narrative pattern.
+5. **Stage 4**: delivery-message compilation + Telegram Bot API + sent/applied tracking with candidate notes.
 
 ## Active Decisions
 - Keep the FastAPI app (`app/main.py`) as the Stage-1 entrypoint; later stages should expose entrypoints consistent with it (API route, CLI, or worker) under `src/`.
 - Use local markdown issue tracking (`issues.md`) + automation loop instead of GitHub issues.
-- Queue persistence technology not yet chosen (requirements include pandas; a simple DB or JSON store are candidates).
+- Queue persistence: **SQLite** via stdlib `sqlite3` (decided; store at `job-pipeline/data/queues.db`).
+- LLM: OpenAI-compatible API behind shared `src/llm/` abstraction (decided, serves Stage 1 pluggable scorer + Stages 2–3).
+- Messaging: Telegram Bot API (decided, Stage 4).
+- Research: Tavily now → Zyte spider future → DuckDuckGo/firecrawl fallbacks (decided, Stage 3).
 
 ## Important Patterns and Preferences
 - One package per stage under `src/`; typed pure functions; docstrings on all public functions.
@@ -34,9 +37,7 @@ Initializing and maintaining the memory bank; the repository itself is at the sc
 - The automation tracker only commits/pushes when a `.git` folder is present at `REPO_ROOT` (which is `job-pipeline/`).
 
 ## Open Questions
-- Which persistent storage to use for the queues (SQLite vs JSON vs pandas-backed)?
-- Which messaging platform to integrate first for Stage 4 (WhatsApp/Telegram/Signal)?
-- Which job-board sources to prioritize for scraping?
+- None — storage (SQLite), LLM (OpenAI-compatible), messaging (Telegram), and sources (JSON-API boards now + HTML stub later) are all decided. Open question only for implementation: exact Remotive/RemoteOK JSON field shapes (verify against live responses before finalizing field mappings).
 
 ## Blockers
 - None currently; implementation can begin at any stage.
