@@ -39,8 +39,10 @@ src/coverletter/ (new package)
 
 ### Entry point (per `./pipeline-integration.md` API surface)
 - `POST /jobs/{id}/coverletter/generate` — FastAPI route in `app/main.py`.
-- CLI: `coverletter generate <id>`.
-- Triggering is manual per entry (orchestration principle in `./pipeline-integration.md`).
+- Substage-only trigger: `POST /jobs/{id}/research` runs the research substage alone (refreshes `metadata.research`; no generation, no status change).
+- Batch trigger: `POST /stage3/run?limit=N` processes up to N `resume_ready` entries whose `metadata.resume.path` exists on disk; `?dry_run=true` reports the selection.
+- CLI: `coverletter generate <id>`, `coverletter research <id>`, `coverletter run [--limit N]`.
+- Queue selection: `resume_ready` entries with a resume artifact on disk, per the stage trigger & queue-selection contract in `./pipeline-integration.md`. Triggering is manual per entry or via explicit batch run (orchestration principle in `./pipeline-integration.md`).
 
 ### Research (`src/coverletter/research.py`)
 - Modular provider chain behind a `Researcher` protocol: `TavilyResearcher` now → `ZyteSpider` in future → `DuckDuckGoResearcher` / `FirecrawlResearcher` fallbacks.

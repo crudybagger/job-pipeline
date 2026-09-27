@@ -100,13 +100,21 @@ The `JobEntry.metadata` dict is the per-job scratch space. Keys are **extended, 
 
 ## Unified API surface
 
-One canonical `jobs` resource in `app/main.py` — **no separate `/sent` resource** (sent is a status of the same rows):
+One canonical `jobs` resource in `app/main.py` — **no separate `/sent` resource** (sent is a status of the same rows). Routes fall into five groups: **read/status**, **per-entry actions**, **substage-only triggers**, **generic entry edit**, and **batch stage runs**.
+
+### Read / status (shared admin surface, shipped with Stage 1)
+
+| Route | Purpose |
+|-------|---------|
+| `GET /status` | Pipeline-wide summary: counts per status, per-stage progress (e.g., Stage 2: in-flight `accepted`, done `resume_ready`, `needs_review` flagged), aggregate flags (`metadata.ats.needs_review`, `metadata.research.research_degraded`) |
+| `GET /jobs?status=...` | List one queue — replaces `GET /queue/{status}` and `GET /sent` |
+| `GET /jobs/{id}` | Full entry (all fields + metadata) — replaces `GET /queue/entry/{id}` |
+
+### Per-entry actions (owned by the stage that performs the transition)
 
 | Route | Stage |
 |-------|-------|
 | `POST /ingest` | 1 — full flow: fetch → parse → score → queue |
-| `GET /jobs?status=...` | all — replaces `GET /queue/{status}` and `GET /sent` |
-| `GET /jobs/{id}` | all — replaces `GET /queue/entry/{id}` |
 | `POST /jobs/{id}/accept` \| `POST /jobs/{id}/reject` \| `POST /jobs/{id}/note` | 1 |
 | `POST /jobs/{id}/resume/generate` (`?run_to_completion=true`) | 2 |
 | `POST /jobs/{id}/resume/force-ready` | 2 — human decision for `needs_review` entries |
@@ -114,7 +122,76 @@ One canonical `jobs` resource in `app/main.py` — **no separate `/sent` resourc
 | `POST /jobs/{id}/send` (`?force=true`) | 4 |
 | `POST /jobs/{id}/application-status` (applied/not-applied + notes) | 4 |
 
-CLI subcommands mirror the routes under `python -m src.queues.cli` (Stage 1) and per-stage CLIs (Stages 2–4 docs).
+### Substage-only triggers (see Substage modularity contract)
+
+| Route | Stage / substage |
+|-------|------------------|
+| `POST /jobs/{id}/resume/ats` | 2 — ATS scoring only (appends to `metadata.ats`; no generation, no transition) |
+| `POST /jobs/{id}/research` | 3 — research only (refreshes `metadata.research`; no generation, no transition) |
+| `GET /jobs/{id}/delivery/preview` | 4 — compile only (returns the message parts; no send, no transition) |
+
+### Generic entry edit (admin/misc)
+
+| Route | Purpose |
+|-------|---------|
+| `PATCH /jobs/{id}` | Edit human-owned fields without triggering a stage: `title`, `company_name`, `company_website`, `contact`, `source_url`, `notes`, and human-owned metadata keys (`base_resume_path`, `notes`). Guardrails: `id` and `status` are **never** edited here (status changes only via the transition endpoints above); stage-owned registry keys (`score`, `score_breakdown`, `ats`, `resume`, `research`, `coverletter`, `delivery`, `application`) are rejected — only the owning stage's code path may write them. |
+
+### Batch stage runs (each stage triggers independently over its queue)
+
+| Route | Stage | Selects |
+|-------|-------|---------|
+| `POST /stage1/run` | 1 | All enabled `sources` from config (one ingest round) |
+| `POST /stage2/run?limit=N` | 2 | Up to N `accepted` entries (incl. `needs_review` re-runs) |
+| `POST /stage3/run?limit=N` | 3 | Up to N `resume_ready` entries with `metadata.resume.path` on disk |
+| `POST /stage4/run?limit=N` | 4 | Up to N `resume_ready` entries with resume + cover-letter artifacts on disk |
+
+Batch runs call the **same per-entry functions** as the per-entry routes (one code path, two entrypoints) and accept `?dry_run=true` to report what *would* be processed. Batch runs are still human-triggered — see Orchestration.
+
+CLI subcommands mirror all five groups: `python -m src.queues.cli` (Stage 1 + the shared admin surface: `status`, `view <status>`, `show <id>`, `edit <id>`) and per-stage CLIs (Stages 2–4 docs), including substage subcommands (`resume ats <id>`, `coverletter research <id>`, `send preview <id>`) and a `run` batch subcommand per stage.
+
+## Stage trigger & queue-selection contract
+
+Every stage is independently triggerable and selects its work from the shared SQLite `jobs` table **only by status filter + registered preconditions** — never by importing another stage:
+
+| Stage | Package | Input queue (status filter) | Preconditions (beyond status) | Per-entry trigger | Batch trigger | Transition on success |
+|-------|---------|------------------------------|-------------------------------|-------------------|---------------|------------------------|
+| 1 | `src/ingestion` + `src/parsing` + `src/matching` | — (creates/updates rows itself) | — | `POST /ingest` | `POST /stage1/run` | `new → accepted/rejected` (score-driven) |
+| 2 | `src/resume` | `accepted` | `metadata.base_resume_path` or `base_resume_path` config resolvable | `POST /jobs/{id}/resume/generate` | `POST /stage2/run` | `accepted → resume_ready` (threshold met) or `metadata.ats.needs_review` (cap) |
+| 3 | `src/coverletter` | `resume_ready` | `metadata.resume.path` exists on disk | `POST /jobs/{id}/coverletter/generate` | `POST /stage3/run` | none (stays `resume_ready`) |
+| 4 | `src/outreach` | `resume_ready` | `metadata.resume.path` + `metadata.coverletter.path` exist on disk | `POST /jobs/{id}/send` | `POST /stage4/run` | `resume_ready → sent` |
+
+Rules:
+
+1. A stage's queue selection is `status ∈ input queue` **AND** all preconditions; entries failing preconditions are skipped and reported in the run result, never crashed on.
+2. Stages never filter on another stage's metadata beyond the registry keys listed in this table.
+3. A stage is "triggerable" iff its row here is implemented as API routes in `app/main.py` plus mirrored CLI subcommands (per-entry + batch + substage-only).
+4. Adding a precondition requires registering its metadata key in the registry below **first** — the table and registry move together.
+
+## Observability & admin tooling (status API + UI)
+
+- **`GET /status`** (shipped with Stage 1, kept current by all stages): `{ "queues": { "new": n, "accepted": n, "rejected": n, "resume_ready": n, "sent": n }, "stages": { "stage2": { "in_flight": n, "needs_review": n }, "stage3": { "degraded_research": n }, "stage4": { "sent": n, "applied": n } } }`. Derived purely from status counts + registry keys — no stage-specific queries; each stage keeps it correct simply by writing its registered metadata.
+- **Admin UI**: a single static page (`app/static/index.html`, vanilla JS + `fetch`, **no new dependencies** — no Jinja2, no frontend framework) served at `GET /ui`. It is a thin client over the API only: queue tabs with counts from `GET /status`, entry list per queue (`GET /jobs?status=...`), entry detail with full metadata (`GET /jobs/{id}`), action buttons mapping 1:1 to the API routes (accept / reject / note / generate / force-ready / send / application-status), and an edit form backed by `PATCH /jobs/{id}`. The UI owns no logic — anything it can do must exist as an API route first.
+- **CLI parity**: `python -m src.queues.cli status | view <status> | show <id> | edit <id>` for headless use of the same surface.
+
+## Substage modularity contract
+
+Stages are packages; **substages are modules within a stage package**. A substage:
+
+1. Is one module with **one public primary function** (e.g., `src/resume/ats.py` → `score_resume`, `src/coverletter/research.py` → `collect_research`, `src/outreach/compile.py` → `compile_message`).
+2. Owns exactly one registered metadata key (or appends to one list-shaped key) and writes nothing outside it.
+3. Can be triggered independently via its own subroute + CLI subcommand (see Substage-only triggers above). Running a substage never transitions status unless that substage owns the transition (Stage 4 `send` owns `resume_ready → sent`; ATS scoring does not).
+4. Never imports another stage's package — only the shared foundation (`src/models`, `src/config`, `src/queues/store`, `src/llm`) and its own stage package.
+
+**When to break a stage into substages:** whenever a stage has ≥ 2 independently useful operations or independent external dependencies (network providers, artifacts, messaging). Current decomposition:
+
+| Stage | Substages (module → primary function) |
+|-------|----------------------------------------|
+| 1 | `ingestion/ingest.py → fetch_from_source` (per-source fetcher plugins), `parsing/parse.py → parse_job_listing`, `matching/match.py → compute_match_score` |
+| 2 | `resume/generate.py → edit_base_resume`, `resume/ats.py → score_resume`, `resume/loop.py → run_loop` (orchestrates the two; the only Stage 2 place allowed to transition status) |
+| 3 | `coverletter/research.py → collect_research` (provider chain), `coverletter/generate.py → generate_coverletter` |
+| 4 | `outreach/compile.py → compile_message`, `outreach/send.py → TelegramSender.send` (owns the transition), `outreach/track.py → record_application_status` |
+
+This makes every substage unit-testable in isolation and every stage replaceable without touching the others.
 
 ## Data layout
 
@@ -129,7 +206,7 @@ job-pipeline/data/
 
 ## Orchestration: deliberately manual
 
-Nothing auto-runs Stage 2 after acceptance. **Every status transition and stage action is human/API-triggered**, matching the review-oriented, single-candidate scope. A batch runner (e.g., "process all accepted") may be added later as a convenience, but it is not part of the core design.
+Nothing auto-runs Stage 2 after acceptance. **Every status transition and stage action is human/API-triggered**, matching the review-oriented, single-candidate scope. The batch triggers above make each stage independently runnable over its whole queue, but a batch run is still an explicit human action (one API call or one CLI command) — there are no schedulers, cron jobs, watchers, or auto-advancing loops anywhere in the pipeline.
 
 ## Testing contract (all stages)
 

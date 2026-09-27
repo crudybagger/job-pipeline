@@ -4,6 +4,7 @@
 Tracks what works, what remains to build, current status, known issues, and evolution of project decisions.
 
 ## What Works
+- ✅ **Integration solidified** (second design pass): independent stage triggering + queue-selection contract, batch stage runs, `GET /status` + `PATCH /jobs/{id}` + static admin UI (`GET /ui`), and the substage modularity contract added to `docs/design/pipeline-integration.md`; per-stage docs amended.
 - ✅ **Design review of all 4 stages completed** (individual + whole-pipeline integration review); all integration issues resolved in the design.
 - ✅ Design docs restructured in `docs/design/`: `pipeline-integration.md` (cross-stage contract: `JobStatus` enum, job ID scheme, metadata registry, transition map, unified API surface, data layout, config shape, testing contract) + per-stage files: `stage1-job-scraping-and-filtering.md` (amended), `stage2-resume-generation.md`, `stage3-cover-letter-generation.md`, `stage4-candidate-delivery.md`. Superseded `stage2-4-plan.md` removed.
 - ✅ Repository scaffolding (Issue #3, Done): FastAPI app (`app/main.py` with `/` health and `POST /ingest`), stage packages under `src/`, test suite, CI workflow.
@@ -14,7 +15,7 @@ Tracks what works, what remains to build, current status, known issues, and evol
 - ✅ Plan-driven root README documenting all 4 stages and run targets.
 
 ## What's Left to Build
-- ⬜ **Stage 1** (per `docs/design/stage1-job-scraping-and-filtering.md` + `docs/design/pipeline-integration.md`): full-shape config layer + models (forward-complete `JobStatus`, stable job ID), ingestion dispatch + fetchers (Remotive/RemoteOK JSON-API, HTML stub), parsing normalization, deterministic scoring, SQLite jobs store with transition enforcement, CLI + unified FastAPI routes, shared `tests/conftest.py`, tests.
+- ⬜ **Stage 1** (per `docs/design/stage1-job-scraping-and-filtering.md` + `docs/design/pipeline-integration.md`): full-shape config layer + models (forward-complete `JobStatus`, stable job ID), ingestion dispatch + fetchers (Remotive/RemoteOK JSON-API, HTML stub), parsing normalization, deterministic scoring, SQLite jobs store with transition enforcement, CLI + unified FastAPI routes (incl. the shared admin surface: `GET /status`, `PATCH /jobs/{id}`, batch `POST /stage1/run`, static UI at `GET /ui`), shared `tests/conftest.py`, tests.
 - ⬜ **Shared foundation** (per `docs/design/pipeline-integration.md`): `src/llm/` OpenAI-compatible abstraction (config `stage2`/`stage3`/`stage4` sections already shipped by Stage 1).
 - ❌ **Stage 2** (per `docs/design/stage2-resume-generation.md`): LaTeX minimal-edit generation on disk; ATS-like scoring substage with feedback-notes loop until ready; `needs_review` path for capped iterations; separate `resume_ready` status.
 - ❌ **Stage 3** (per `docs/design/stage3-cover-letter-generation.md`): Tavily-first modular research chain with graceful degradation; cover letter generation following the fixed narrative pattern; artifacts on disk.

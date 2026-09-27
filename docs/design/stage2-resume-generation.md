@@ -38,8 +38,10 @@ src/resume/ (new package)
 
 ### Entry point (per `./pipeline-integration.md` API surface)
 - `POST /jobs/{id}/resume/generate` (`?run_to_completion=true` to run the loop to threshold or cap) — FastAPI route in `app/main.py`.
-- CLI: `resume generate <id>` (+ `resume force-ready <id>` for the `needs_review` path).
-- Triggering is manual per entry (orchestration principle in `./pipeline-integration.md`).
+- Substage-only trigger: `POST /jobs/{id}/resume/ats` runs the ATS scoring substage alone (appends to `metadata.ats`; no generation, no status transition).
+- Batch trigger: `POST /stage2/run?limit=N` processes up to N `accepted` entries (incl. `needs_review` re-runs) through the same per-entry code path; `?dry_run=true` reports the selection.
+- CLI: `resume generate <id>`, `resume ats <id>`, `resume run [--limit N]` (+ `resume force-ready <id>` for the `needs_review` path).
+- Queue selection: `accepted` entries with a resolvable `base_resume_path`, per the stage trigger & queue-selection contract in `./pipeline-integration.md`. Triggering is manual per entry or via explicit batch run (orchestration principle in `./pipeline-integration.md`).
 
 ### Generation (`src/resume/generate.py`)
 - `edit_base_resume(job, candidate, base_latex) → str` — LLM-edited bulletpoints/skills/summary.

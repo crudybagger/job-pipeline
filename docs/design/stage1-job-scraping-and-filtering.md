@@ -77,8 +77,9 @@ Interactive tooling                CLI (`python -m src.queues.cli`) + FastAPI ro
 - Idempotent re-ingest: existing entries are updated, not duplicated.
 
 ### Interactive tooling
-- CLI subcommands: `view-accepted`, `view-rejected`, `accept <id>`, `reject <id>`, `note <id> <text>`.
-- FastAPI routes in `app/main.py` per the **unified API surface** in `./pipeline-integration.md`: `POST /ingest` upgraded to run the full Stage-1 flow (fetch → parse → score → queue), plus `GET /jobs?status=...`, `GET /jobs/{id}`, `POST /jobs/{id}/accept` | `reject` | `note`. Stages 2–4 extend the same `jobs` resource (no parallel resources).
+- CLI subcommands: `view-accepted`, `view-rejected`, `accept <id>`, `reject <id>`, `note <id> <text>`; plus the shared admin surface Stage 1 ships for all stages: `status`, `view <status>`, `show <id>`, `edit <id>`, and the batch `run`.
+- FastAPI routes in `app/main.py` per the **unified API surface** in `./pipeline-integration.md`: `POST /ingest` upgraded to run the full Stage-1 flow (fetch → parse → score → queue), plus `GET /jobs?status=...`, `GET /jobs/{id}`, `POST /jobs/{id}/accept` | `reject` | `note`, and the shared admin surface Stage 1 owns: `GET /status`, `PATCH /jobs/{id}`, batch `POST /stage1/run`, and the static admin UI served at `GET /ui`. Stages 2–4 extend the same `jobs` resource (no parallel resources).
+- Independent triggering: Stage 1 has no input queue — it creates/updates rows itself via `POST /ingest` (single source) or `POST /stage1/run` (all enabled sources), per the stage trigger & queue-selection contract in `./pipeline-integration.md`.
 
 ### Tests (`job-pipeline/tests/`)
 - Scorer unit tests (weights/threshold from a test config), parser normalization tests with fixture payloads per source, store tests against a temp-dir SQLite DB (monkey-patched constant, matching the existing isolated-tests pattern), CLI tests, API tests via `TestClient`.

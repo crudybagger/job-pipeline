@@ -41,6 +41,7 @@ Job boards → Ingestion (Stage 1) → Parsing → Matching (score filter)
 Planned queues (per `plan.md`): accepted, rejected, resume-ready, sent — all in persistent storage.
 
 ## Key Technical Decisions
+- **Cross-stage integration contract** (`docs/design/pipeline-integration.md`): stage trigger & queue-selection table (per-stage input status filter + registered preconditions + batch triggers `POST /stage{1..4}/run`), observability surface (`GET /status` summary, `PATCH /jobs/{id}` guarded entry edit, static admin UI at `GET /ui` with no new dependencies), and the substage modularity contract (one module / one primary function / one metadata key per substage; substage-only triggers never transition status unless they own the transition).
 - **FastAPI app as Stage-1 entrypoint** (`app/main.py`); `POST /ingest(source_url)` triggers `fetch_job_listings`. Stages 2–4 should expose entrypoints consistent with this pattern (API route, CLI, or worker) under `src/`.
 - **One package per pipeline stage** under `src/` (ingestion → parsing → matching → outreach), each with pure functions and type hints, currently returning placeholder values.
 - **Markdown issue tracking** (`issues.md`) instead of GitHub issues; automation loop parses open issues, generates `src/<slug>.py` placeholders, marks issues Done/assignee=automation, and commits+pushes when inside a git repo.

@@ -40,9 +40,11 @@ src/outreach/ (new package)
 ### Entry point (per `./pipeline-integration.md` API surface)
 - `POST /jobs/{id}/send` (`?force=true` to override the idempotency guard) — FastAPI route in `app/main.py`.
 - `POST /jobs/{id}/application-status` (applied/not-applied + candidate notes) — candidate-facing tracking.
+- Substage-only trigger: `GET /jobs/{id}/delivery/preview` runs the compile substage alone (returns the message parts; no send, no transition).
+- Batch trigger: `POST /stage4/run?limit=N` sends for up to N `resume_ready` entries with both resume and cover-letter artifacts on disk; `?dry_run=true` reports the selection.
 - `GET /jobs?status=sent` — replaces the previously planned separate `GET /sent` resource.
-- CLI: `send <id>`, `application-status <id> <applied|not-applied> <notes>`, `view-sent`.
-- Triggering is manual per entry (orchestration principle in `./pipeline-integration.md`).
+- CLI: `send <id>`, `send preview <id>`, `send run [--limit N]`, `application-status <id> <applied|not-applied> <notes>`, `view-sent`.
+- Queue selection: `resume_ready` entries with resume + cover-letter artifacts on disk, per the stage trigger & queue-selection contract in `./pipeline-integration.md`. Triggering is manual per entry or via explicit batch run (orchestration principle in `./pipeline-integration.md`).
 
 ### Compilation (`src/outreach/compile.py`)
 - `compile_message(entry) -> list[str]` — builds the text message parts from `stage4.message_template` config:
