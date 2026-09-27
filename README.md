@@ -1,7 +1,7 @@
 # Job Pipeline
 
 This repository is initialized from the product plan in
-`/home/runner/work/job-pipeline/job-pipeline/plan.md`.
+`./plan.md`.
 
 The goal is a 4-stage pipeline that discovers jobs, prepares tailored application
 material, and sends a review-ready package to the candidate.
@@ -31,7 +31,7 @@ material, and sends a review-ready package to the candidate.
 ### Shared setup
 
 ```bash
-cd /home/runner/work/job-pipeline/job-pipeline/job-pipeline
+cd ./job-pipeline
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -41,10 +41,10 @@ pip install -r requirements.txt
 
 - **Configure:** job board sources, search keywords, and match-score threshold.
 - **Run target:** ingestion endpoint in
-  `/home/runner/work/job-pipeline/job-pipeline/job-pipeline/app/main.py`.
+  `./job-pipeline/app/main.py`.
 
 ```bash
-cd /home/runner/work/job-pipeline/job-pipeline/job-pipeline
+cd ./job-pipeline
 uvicorn app.main:app --reload
 # then call POST /ingest with source_url
 ```
@@ -54,7 +54,7 @@ uvicorn app.main:app --reload
 - **Configure:** base resume path, keyword/experience weighting, ATS acceptance
   threshold, and retry loop limits.
 - **Run target:** implement stage logic under
-  `/home/runner/work/job-pipeline/job-pipeline/job-pipeline/src/` and expose an
+  `./job-pipeline/src/` and expose an
   entrypoint (API route, CLI, or worker) consistent with Stage 1 patterns.
 
 ### Stage 3 — Matching Cover Letter Generation
@@ -62,7 +62,7 @@ uvicorn app.main:app --reload
 - **Configure:** story-building context, company-research sources, and output
   format constraints per job board/company.
 - **Run target:** implement under
-  `/home/runner/work/job-pipeline/job-pipeline/job-pipeline/src/` with a
+  `./job-pipeline/src/` with a
   dedicated module/entrypoint that consumes Stage 2-ready jobs.
 
 ### Stage 4 — Candidate Delivery Package
@@ -70,20 +70,20 @@ uvicorn app.main:app --reload
 - **Configure:** messaging provider (e.g., WhatsApp/Telegram/Signal), delivery
   channel credentials, and sent/applied status tracking fields.
 - **Run target:** implement a dispatch module in
-  `/home/runner/work/job-pipeline/job-pipeline/job-pipeline/src/` that packages
+  `./job-pipeline/src/` that packages
   Stage 3 output and updates tracking state after send.
 
 ## Repository context
 
-- `/home/runner/work/job-pipeline/job-pipeline/plan.md`
+- `./plan.md`
   - Product blueprint for all 4 stages and expected behavior.
-- `/home/runner/work/job-pipeline/job-pipeline/job-pipeline/`
+- `./job-pipeline/`
   - Main Python project (FastAPI app, source modules, tests, and requirements).
-- `/home/runner/work/job-pipeline/job-pipeline/automation/`
+- `./automation/`
   - Namespace wrapper so automation modules are importable from repository root.
-- `/home/runner/work/job-pipeline/job-pipeline/job-pipeline/automation/`
+- `./job-pipeline/automation/`
   - Local issue-tracker automation (`issues.md` processing loop).
-- `/home/runner/work/job-pipeline/job-pipeline/scripts/`
+- `./scripts/`
   - Utility scripts for repository bootstrap tasks.
 
 ## Development checks
@@ -91,6 +91,6 @@ uvicorn app.main:app --reload
 Run existing tests from the Python project directory:
 
 ```bash
-cd /home/runner/work/job-pipeline/job-pipeline/job-pipeline
+cd ./job-pipeline
 pytest -q
 ```
