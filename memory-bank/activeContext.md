@@ -4,28 +4,31 @@
 Current work focus, recent changes, next steps, and active decisions for the project.
 
 ## Current Work Focus
-Stage 1–4 design plans are agreed and committed; implementation of Stage 1 is the immediate next step.
+Stage 1–4 design review completed (individual + whole-pipeline integration review); design docs restructured into per-stage files plus a cross-stage contract. Implementation of Stage 1 is the immediate next step.
 
 ## Recent Changes
-- Stage 1 design plan committed and pushed (`19dcb33`): `docs/design/stage1-job-scraping-and-filtering.md`.
-- Stage 2–4 design plan committed and pushed (`01c1989`): `docs/design/stage2-4-plan.md`.
+- **Design review completed**: each stage reviewed individually and the pipeline as a whole against `plan.md` and the scaffolding code; all integration issues resolved in the design.
+- Design docs restructured in `docs/design/`: `pipeline-integration.md` (new cross-stage contract), per-stage files `stage1-job-scraping-and-filtering.md` (amended), `stage2-resume-generation.md`, `stage3-cover-letter-generation.md`, `stage4-candidate-delivery.md` (split from the removed `stage2-4-plan.md`).
+- Key integration decisions fixed before implementation: forward-complete `JobStatus` enum (incl. `resume_ready`, `sent`; applied state in `metadata.application`); stable job ID `sha256(title|company|source)[:12]` as store primary key; documented metadata key registry (extend, never repurpose); status transition map enforced in the store; unified `jobs` API resource (no separate `/sent`); artifacts on disk (`data/resumes/<id>.tex`, `data/coverletters/<id>.md`); Stage 2 `max_iterations` cap does **not** auto-advance (sets `metadata.ats.needs_review`, human force-ready); Stage 4 two-part delivery (text message + resume as `sendDocument` attachment) with idempotency via `metadata.delivery`; one config file shape from day one; stages never import each other (store is the only cross-stage contract); manual orchestration; shared `tests/conftest.py` fixtures.
 - Confirmed Stage 1 decisions: JSON-API boards now + HTML-scraper stub later (plugin pattern); SQLite queues; deterministic scoring now + pluggable LLM backend later; CLI + FastAPI tooling; JSON config with pydantic validation.
 - Confirmed Stage 2–4 decisions: OpenAI-compatible LLM behind shared `src/llm/`; Telegram Bot API for Stage 4; Tavily research now → Zyte later → DuckDuckGo/firecrawl fallbacks; section-targeted LaTeX editing; ATS loop capped by threshold + max iterations; plain-text cover letters; `sent` status in the same SQLite store.
 
 ## Next Steps
-1. **Implement Stage 1** per `docs/design/stage1-job-scraping-and-filtering.md`: config layer + models, ingestion dispatch + fetchers (Remotive/RemoteOK JSON-API, HTML stub), parsing normalization, deterministic scoring, SQLite queue store, CLI + FastAPI tooling, tests.
-2. **Shared foundation for Stages 2–4** per `docs/design/stage2-4-plan.md`: `src/llm/` OpenAI-compatible abstraction + config extension (`stage2`/`stage3`/`stage4` sections).
-3. **Stage 2**: LaTeX minimal-edit resume generation + ATS substage feedback loop with its own resume-ready queue status.
-4. **Stage 3**: Tavily research chain + cover letter generation following the fixed narrative pattern.
-5. **Stage 4**: delivery-message compilation + Telegram Bot API + sent/applied tracking with candidate notes.
+1. **Implement Stage 1** per `docs/design/stage1-job-scraping-and-filtering.md` + `docs/design/pipeline-integration.md`: full-shape config layer + models (forward-complete `JobStatus`, stable job ID), ingestion dispatch + fetchers (Remotive/RemoteOK JSON-API, HTML stub), parsing normalization, deterministic scoring, SQLite jobs store with transition enforcement, CLI + unified FastAPI routes, shared `tests/conftest.py` + tests.
+2. **Shared foundation for Stages 2–4** per `docs/design/pipeline-integration.md`: `src/llm/` OpenAI-compatible abstraction (config `stage2`/`stage3`/`stage4` sections already shipped by Stage 1).
+3. **Stage 2** per `docs/design/stage2-resume-generation.md`: LaTeX minimal-edit generation + ATS substage feedback loop; artifacts on disk; `needs_review` path for capped iterations.
+4. **Stage 3** per `docs/design/stage3-cover-letter-generation.md`: Tavily research chain + cover letter generation following the fixed narrative pattern.
+5. **Stage 4** per `docs/design/stage4-candidate-delivery.md`: two-part delivery compilation + Telegram Bot API (message + `sendDocument`) + idempotent send + sent/applied tracking with candidate notes.
 
 ## Active Decisions
-- Keep the FastAPI app (`app/main.py`) as the Stage-1 entrypoint; later stages should expose entrypoints consistent with it (API route, CLI, or worker) under `src/`.
+- Keep the FastAPI app (`app/main.py`) as the Stage-1 entrypoint; later stages extend the same unified `jobs` API resource (no parallel resources like a separate `/sent`).
 - Use local markdown issue tracking (`issues.md`) + automation loop instead of GitHub issues.
-- Queue persistence: **SQLite** via stdlib `sqlite3` (decided; store at `job-pipeline/data/queues.db`).
+- Queue persistence: **SQLite** via stdlib `sqlite3` (decided; store at `job-pipeline/data/queues.db`) — the single cross-stage store; stages never import each other.
 - LLM: OpenAI-compatible API behind shared `src/llm/` abstraction (decided, serves Stage 1 pluggable scorer + Stages 2–3).
-- Messaging: Telegram Bot API (decided, Stage 4).
+- Messaging: Telegram Bot API (decided, Stage 4; resume delivered as document attachment).
 - Research: Tavily now → Zyte spider future → DuckDuckGo/firecrawl fallbacks (decided, Stage 3).
+- Resume/cover-letter artifacts live on disk under `job-pipeline/data/` (gitignored), not in DB blobs.
+- Orchestration is deliberately manual: every status transition and stage action is human/API-triggered.
 
 ## Important Patterns and Preferences
 - One package per stage under `src/`; typed pure functions; docstrings on all public functions.
