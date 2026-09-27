@@ -4,6 +4,8 @@ Design plan for **Stage 1** of the Job Finder and Application Pipeline (see `pla
 
 **Integration note:** the cross-stage contract (`./pipeline-integration.md`) defines the shared `JobStatus` enum, stable job ID scheme, metadata key registry, status transition map, unified API surface, and data layout referenced throughout this document. Stages 2–4 reuse everything defined here.
 
+**Implementation status (2026-09-27): implemented and validated with real web data.** The function-level design lives in `./stage1-lld.md`; the practical context and usage guide (config, running, review tooling, re-tuning loop, live check) is `../stage1-context-and-usage.md`. Implementation deltas vs. this document: the **Bundesagentur für Arbeit** Jobsuche API was added as a 4th JSON-API source (public `X-API-Key` header; one search per source entry; 403 from datacenter IPs — errors degrade gracefully per source), the match scoring adds a **hard location gate** (remote OR Aachen/Köln-area) on top of the three weighted factors, and `stage1.py` is the shared orchestrator module (`run_stage1`) used by both the API routes and the CLI.
+
 ## Scope
 
 Collect job postings from job boards (config-driven keywords), normalize them into a validated job entry, compute a configurable match score against the candidate profile, and maintain accepted/rejected queues in persistent storage with interactive tooling.

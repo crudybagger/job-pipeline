@@ -39,15 +39,30 @@ pip install -r requirements.txt
 
 ### Stage 1 — Job Scraping and Filtering
 
-- **Configure:** job board sources, search keywords, and match-score threshold.
-- **Run target:** ingestion endpoint in
-  `./job-pipeline/app/main.py`.
+- **Configure:** `./job-pipeline/config/pipeline.json` (real config, gitignored;
+  `config/pipeline.example.json` documents the shape): job board sources
+  (Remotive, RemoteOK, Arbeitnow, Bundesagentur für Arbeit — plus an HTML-stub
+  seam for the RWTH Aachen HiWi board), EN+DE search keywords, match-score
+  weights/threshold, role/location keywords, and the candidate profile.
+- **Run targets:**
+  - FastAPI: `POST /ingest` (one source), `POST /stage1/run` (all enabled
+    sources), `GET /status`, `GET /jobs?status=`, `GET /jobs/{id}`,
+    `POST /jobs/{id}/accept|reject|note`, `PATCH /jobs/{id}`, `GET /ui`.
 
-```bash
-cd ./job-pipeline
-uvicorn app.main:app --reload
-# then call POST /ingest with source_url
-```
+    ```bash
+    cd ./job-pipeline
+    uvicorn app.main:app --reload
+    # then call POST /ingest with {"source": "remotive"}
+    ```
+  - CLI (from `./job-pipeline`): `python -m src.queues.cli status | view new |
+    view-accepted | show <id> | accept <id> | reject <id> | note <id> <text> |
+    edit <id> field=value | run [--source NAME] [--limit N] [--dry-run]`
+  - Live isolation check with real web data (manual, not part of `pytest`):
+    `python scripts/stage1_live.py [--dry-run]`; re-tune the score via
+    `python scripts/analyze_rejected.py` (see `docs/design/stage1-lld.md`).
+- **LLD:** `./docs/design/stage1-lld.md`; context & usage guide:
+  `./docs/stage1-context-and-usage.md`; cross-stage contract:
+  `./docs/design/pipeline-integration.md`.
 
 ### Stage 2 — Matching Resume Generation
 

@@ -22,14 +22,18 @@ pip install -r requirements.txt
 ```
 
 ## Common Commands
-- Run API: `uvicorn app.main:app --reload` (from `job-pipeline/`), then `POST /ingest` with `source_url`
-- Run tests: `pytest -q` (from `job-pipeline/`) — currently **3 passed** via `.venv/bin/python -m pytest -q`
+- Run API: `uvicorn app.main:app --reload` (from `job-pipeline/`); unified surface: `POST /ingest` `{"source": "remotive"}`, `POST /stage1/run?limit=&dry_run=`, `GET /status`, `GET /jobs?status=`, `GET /jobs/{id}`, `POST /jobs/{id}/accept|reject|note`, `PATCH /jobs/{id}`, `GET /ui`
+- Run tests: `pytest -q` (from `job-pipeline/`) — currently **84 passed** via `.venv/bin/python -m pytest -q`
+- Stage 1 CLI: `python -m src.queues.cli status | view <status> | view-accepted | view-rejected | show <id> | accept <id> | reject <id> | note <id> <text> | edit <id> field=value | run [--source NAME] [--limit N] [--dry-run]`
+- Live isolation check (manual, real web data): `python scripts/stage1_live.py [--dry-run]`; rejected-list analysis for re-tuning: `python scripts/analyze_rejected.py`
 - Issue automation loop: `python -m automation.run_issue_loop` (processes `issues.md` every 600s; commits+pushes if `.git` present)
 
 ## Project Structure Constraints
 - All Python code lives under `job-pipeline/`; run tests/uvicorn from that directory so `src.*` imports resolve.
 - `automation` at repo root is a namespace wrapper forwarding to `job-pipeline/automation` (needed when running from `/e/jobs`).
 - No lockfile; dependencies are unpinned in `requirements.txt`.
+- Config lives at `job-pipeline/config/pipeline.json` (real, gitignored) with `pipeline.example.json` documenting the shape; `.env` overrides for secrets (`BA_API_KEY` for the Bundesagentur source, later LLM/Telegram/research keys).
+- Module docstrings follow the multi-line style: line 1 opens, prose inside, `"""` closes before the first import (a self-closing line-1 docstring followed by prose breaks the module).
 
 ## Technical Constraints
 - Environment is Linux (Windows-style mount `/e/jobs`) with **fish** as the default shell — bash-isms like command substitution `(cmd)` in command position fail; prefer `bash -c` or fish-compatible syntax for complex commands.

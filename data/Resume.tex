@@ -1,0 +1,165 @@
+%----------------------------------------------------------------------------------------
+%  Packages And Other Document Configurations
+%----------------------------------------------------------------------------------------
+
+\documentclass{resume} % Use the custom resume.cls style
+
+% Document margins
+\usepackage[left=0.75in,top=0.6in,right=0.75in,bottom=0.6in]{geometry}
+
+% Color and hyperlink packages
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  urlcolor=navyblue,
+  linkcolor=navyblue,
+  pdfborder={0 0 0}
+}
+
+% Footnote and margin adjustment packages
+\usepackage{footnote}
+\usepackage{changepage}
+
+% Fontawesome package for icons
+\usepackage{fontawesome}
+
+% Tabularx package for custom tables
+\usepackage{tabularx}
+
+% Define navyblue color
+\definecolor{navyblue}{RGB}{0,54,123}
+
+%----------------------------------------------------------------------------------------
+%   Customizations
+%----------------------------------------------------------------------------------------
+
+% Define italicitem, bolditem, and plainitem commands
+\newcommand{\italicitem}[1]{\item{\textit{#1}}}
+\newcommand{\bolditem}[1]{\item{\textbf{#1}}}
+\newcommand{\plainitem}[1]{\item{#1}}
+
+% Define user-friendly link command for hyperlinks
+\newcommand{\link}[2]{{\href{#1}{#2}}}
+
+\newcommand{\entry}[2]{#1 & #2 \tabularnewline} % Defines an entry with two arguments
+
+%----------------------------------------------------------------------------------------
+%   Define envsection command for defining a new environment section
+%----------------------------------------------------------------------------------------
+
+\newcommand{\tableEnv}[2]{%
+  \begin{rSection}{#1} 
+    \begin{adjustwidth}{0.0in}{0.1in} 
+      \begin{tabularx}{\linewidth}{@{} >{\bfseries}l @{\hspace{6ex}} X @{}}
+        #2 
+      \end{tabularx}
+    \end{adjustwidth}
+  \end{rSection}
+}
+
+%----------------------------------------------------------------------------------------
+%   Begin document
+%----------------------------------------------------------------------------------------
+
+\name{\color{navyblue} Sarang Nagpal}
+
+\begin{document}
+
+\printPersonalInfo{
+  \personalInfo{\tag{E-mail}\info{sarangnagpal0@gmail.com}  \tag{Mobile number}\info{(+49) 175 5014497}}
+  \personalInfo{\tag{Website}\link{https://crudybagger.github.io}{crudybagger.github.io}   \tag{Location}\info{Aachen, Germany}}
+}
+
+%----------------------------------------------------------------------------------------
+%   Summary section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Summary}
+Results-oriented Engineer and current Master's student with comprehensive experience building high-throughput data systems, scalable architectures, and resilient AI infrastructure. Proven ability to leverage generative AI models, deep learning frameworks, and modern tools to solve real-world business challenges, including managing AI inference engines that handle more than a Billion transactions every day. Highly adept at system design, utilizing modern DevOps practices, orchestrating cloud-native deployments, and strategically applying data analytics to solve both internal and external business problems at enterprise scale.
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%   Work experience section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Work Experience}
+
+    \begin{rSubsection}{Visa Inc.}{April 2025 - August 2026}{Data Engineer}{Bangalore, India}
+        \item Engineered a token bucket-based rate limiter within a high-performance Go-based distributed system and load generator deployed in Kubernetes, enabling precise control of stress test throughput at more than 100,000 Transactions per second to improve system scalability.
+        \item Initiated and established foundational practices for chaos engineering in AI inference services used for Risk Modeling of financial transactions, focusing on proactively injecting both kubernetes and vanilla cloud infrastructure faults to validate system resilience.
+        \item Designed chaos test cases for multiple components of the architecture simulating latency, resource exhaustion, and stale context scenarios specifically to test the robustness of the Risk Modeling AI inference engine.
+        \item Developed a tool agnostic Jenkins based cron system to automate the execution of chaos tests and generate detailed reports on system performance, enabling continuous improvement of AI inference reliability.
+        \item Collaborated cross-functionally with data scientists and architects to develop telemetry metrics and observability dashboards in Prometheus and Grafana, accurately measuring the blast radius of chaos tests on AI inferencing.
+        \item Optimized and fine-tuned kubernetes distributed Golang and Kafka data pipelines to improve throughput ensuring the system meets stringent SLAs for real-time financial transaction processing.                       
+        \item Improved platform availability towards a 99.9999\%ile target by contributing to distribution of infrastructure into independent operational stacks spread across multiple Availability Zones, ensuring high availability and disaster recovery for critical financial services.
+    \end{rSubsection}
+    
+    \begin{rSubsection}{Amazon}{January 2024 - February 2025}{Software Development Engineer}{Bangalore, India}
+        \item Improved the Unified Payments Interface (UPI)  Payment Method onboarding Success Rate by 5\% for an active base of over 20 million customers by shortening the onboarding process and reducing the number of clicks required for new registrations.
+        \item Engineered a system to securely register existing UPI customers across multiple payment service providers without scaling onboarding services, mitigating single point of failure issues.
+        \item Designed and developed robust RESTful APIs utilizing Java alongside a suite of serverless AWS components, including AWS Lambda, DynamoDB, SQS, and SNS.
+        \item Modernized legacy mobile web interfaces by upgrading from JavaServer Pages (JSP) to ReactJS with Redux, resulting in an 8\% improvement in digital issuance metrics and decreased latency.
+    \end{rSubsection}
+
+    \begin{rSubsection}{Amazon}{May 2022 - July 2022}{Software Development Engineer Intern}{Bangalore, India}
+        \item Conceptualized and built a standalone backend service utilizing Spring Boot (Java) to load test a core UPI service.
+        \item Scaled EC2 instance infrastructure dynamically to successfully execute custom stress testing frameworks in a simulated high-concurrency environment.
+        \item Achieved a 100\% score in the resilience metric by measuring and documenting performance thresholds prior to the conclusion of the internship.
+    \end{rSubsection}
+    
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%   Education section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Education}
+
+    \begin{rSubsectionNoBullet}{\bf Master of Science}{RWTH Aachen University}{Computer Engineering}{May 2026 - Present}
+        \italicitem{}
+    \end{rSubsectionNoBullet}
+    
+    \begin{rSubsectionNoBullet}{\bf Bachelor of Technology }{National Institute of Technology, Warangal}{Electronics and Communication Engineering}{May 2019 - June 2023}
+        \italicitem{Developed a strong mathematical foundation in control systems, advanced physics, low-level algorithmic design, and semiconductor device physics and design.}
+    \end{rSubsectionNoBullet}
+
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%   Skills section
+%----------------------------------------------------------------------------------------
+
+\tableEnv{Skills}{
+    \entry{Programming}{Go (Golang), Python, C++, Java, JavaScript, TypeScript, SQL}
+    
+    \entry{AI \& Data Analytics}{GenAI, Large Language Models (LLMs), TensorFlow, Keras, Pandas, Prompt Engineering, Data Aggregation}
+    
+    \entry{Cloud \& DevOps}{AWS (Lambda, DynamoDB, SQS, SNS), Kubernetes, Docker, ChaosMesh, Kafka, RabbitMQ, Jenkins}
+    
+    \entry{System Design}{Microservices, Serverless Architecture, Event-Driven Messaging, RESTful APIs, Distributed Systems, High-Throughput Data Pipelines}
+
+    \entry{Languages}{English (C2 - IELTS 8.0), German (A2 - Goethe Zertifikat)}
+}
+
+%----------------------------------------------------------------------------------------
+%   Certifications section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Certifications}
+
+    \begin{rSubsectionNoBullet}{\bf Certified Kubernetes Application Developer (CKAD)}{The Linux Foundation}{Cloud-Native Architecture Certification}{August 2026}
+        \plainitem{Hands-on competence in designing, building, configuring, and deploying complex cloud-native applications directly for distributed Kubernetes environments.}
+    \end{rSubsectionNoBullet}
+    
+    \begin{rSubsectionNoBullet}{\bf Machine Learning Certification}{Stanford University (Coursera)}{Algorithmic Foundation Certification}{December 2022}
+        \plainitem{Mathematical foundation of supervised and unsupervised learning.}
+    \end{rSubsectionNoBullet}
+    
+    \begin{rSubsectionNoBullet}{\bf Deep Learning Specialization}{Andrew Ng (Coursera)}{Applied Neural Networks Certification}{September 2020}
+        \plainitem{Convolutional Neural Networks (CNNs); Sequence Models; hyperparameter tuning; mathematical regularization; optimizing deep networks.}
+    \end{rSubsectionNoBullet}
+
+\end{rSection}
+
+\end{document}

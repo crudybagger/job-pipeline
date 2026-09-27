@@ -1,0 +1,165 @@
+%----------------------------------------------------------------------------------------
+%  Packages And Other Document Configurations
+%----------------------------------------------------------------------------------------
+
+\documentclass{resume} % Use the custom resume.cls style
+
+% Document margins
+\usepackage[left=0.75in,top=0.6in,right=0.75in,bottom=0.6in]{geometry}
+
+% Color and hyperlink packages
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  urlcolor=navyblue,
+  linkcolor=navyblue,
+  pdfborder={0 0 0}
+}
+
+% Footnote and margin adjustment packages
+\usepackage{footnote}
+\usepackage{changepage}
+
+% Fontawesome package for icons
+\usepackage{fontawesome}
+
+% Tabularx package for custom tables
+\usepackage{tabularx}
+
+% Define navyblue color
+\definecolor{navyblue}{RGB}{0,54,123}
+
+%----------------------------------------------------------------------------------------
+%   Customizations
+%----------------------------------------------------------------------------------------
+
+% Define italicitem, bolditem, and plainitem commands
+\newcommand{\italicitem}[1]{\item{\textit{#1}}}
+\newcommand{\bolditem}[1]{\item{\textbf{#1}}}
+\newcommand{\plainitem}[1]{\item{#1}}
+
+% Define user-friendly link command for hyperlinks
+\newcommand{\link}[2]{{\href{#1}{#2}}}
+
+\newcommand{\entry}[2]{#1 & #2 \tabularnewline} % Defines an entry with two arguments
+
+%----------------------------------------------------------------------------------------
+%   Define envsection command for defining a new environment section
+%----------------------------------------------------------------------------------------
+
+\newcommand{\tableEnv}[2]{%
+  \begin{rSection}{#1} 
+    \begin{adjustwidth}{0.0in}{0.1in} 
+      \begin{tabularx}{\linewidth}{@{} >{\bfseries}l @{\hspace{6ex}} X @{}}
+        #2 
+      \end{tabularx}
+    \end{adjustwidth}
+  \end{rSection}
+}
+
+%----------------------------------------------------------------------------------------
+%   Begin document
+%----------------------------------------------------------------------------------------
+
+\name{\color{navyblue} Sarang Nagpal}
+
+\begin{document}
+
+\printPersonalInfo{
+  \personalInfo{\tag{E-mail}\info{sarangnagpal0@gmail.com}  \tag{Mobilfunknummer}\info{(+49) 175 5014497}}
+  \personalInfo{\tag{Webseite}\link{https://crudybagger.github.io}{crudybagger.github.io}   \tag{Standort}\info{Aachen, Germany}}
+}
+
+%----------------------------------------------------------------------------------------
+%   Summary section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Zusammenfassung}
+Ergebnisorientierter Ingenieur und aktueller Masterstudent mit umfassender Erfahrung im Aufbau von Hochdurchsatz-Datensystemen, skalierbaren Architekturen und belastbarer KI-Infrastruktur. Nachgewiesene Fähigkeit, generative KI-Modelle, Deep-Learning-Frameworks und moderne Tools zur Lösung realer geschäftlicher Herausforderungen zu nutzen, einschließlich der Verwaltung von KI-Inferenz-Engines, die täglich mehr als eine Milliarde Transaktionen abwickeln. Hochgradig versiert im Systemdesign, unter Verwendung moderner DevOps-Praktiken, Orchestrierung von Cloud-nativen Bereitstellungen und strategischer Anwendung von Datenanalysen zur Lösung sowohl interner als auch externer Geschäftsprobleme auf Unternehmensebene.
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%   Work experience section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Berufserfahrung}
+
+    \begin{rSubsection}{Visa Inc.}{April 2025 - August 2026}{Data Engineer}{Bangalore, India}
+        \item Entwickelt wurde ein Token-Bucket-basierter Ratenbegrenzer in einem leistungsstarken Go-basierten verteilten System und Lastgenerator, der in Kubernetes eingesetzt wird, und ermöglicht die präzise Steuerung des Stresstestdurchsatzes bei mehr als 100.000 Transaktionen pro Sekunde, um die Systemskalierbarkeit zu verbessern.
+        \item Initiierte und etablierte grundlegende Praktiken für das Chaos-Engineering in KI-Inferenzdiensten, die für die Risikomodellierung von Finanztransaktionen verwendet werden, wobei der Schwerpunkt auf der proaktiven Injektion von Fehlern in die Kubernete und Vanille-Cloud-Infrastruktur liegt, um die Systemresilienz zu validieren.
+        \item Entwickelte Chaos-Testfälle für mehrere Komponenten der Architektur, die Latenz, Ressourcenerschöpfung und veraltete Kontextszenarien simulieren, um die Robustheit der Risk Modeling AI-Inferenz-Engine zu testen.
+        \item Entwickelte ein Tool-agnostisches Jenkins-basiertes Cron-System, um die Ausführung von Chaos-Tests zu automatisieren und detaillierte Berichte über die Systemleistung zu erstellen, die eine kontinuierliche Verbesserung der KI-Inferenzzuverlässigkeit ermöglichen.
+        \item Zusammenarbeit funktionsübergreifend mit Datenwissenschaftlern und Architekten, um Telemetriemetrie- und Observability-Dashboards in Prometheus und Grafana zu entwickeln und den Explosionsradius von Chaostests bei KI-Inferenzen genau zu messen.
+        \item Optimierte und fein abgestimmte Kubernetes verteilten Golang- und Kafka-Datenpipelines, um den Durchsatz zu verbessern, um sicherzustellen, dass das System strenge SLAs für die Verarbeitung von Finanztransaktionen in Echtzeit erfüllt.                  
+        \item Verbesserte Plattformverfügbarkeit hin zu einem 99,99999\%ile-Ziel, indem sie zur Verteilung der Infrastruktur in unabhängige betriebliche Stapel beiträgt, die über mehrere Availability Zones verteilt sind, um eine hohe Verfügbarkeit und Notfallwiederherstellung für kritische Finanzdienstleistungen zu gewährleisten.
+    \end{rSubsection}
+    
+    \begin{rSubsection}{Amazon}{January 2024 - February 2025}{Software Development Engineer}{Bangalore, India}
+        \item Verbesserte die Onboarding-Erfolgsrate der Unified Payments Interface (UPI)-Zahlungsmethode um 5 \% für eine aktive Basis von über 20 Millionen Kunden, indem der Onboarding-Prozess verkürzt und die Anzahl der für Neuregistrierungen erforderlichen Klicks reduziert wurde.
+        \item Entwickelte ein System, um bestehende UPI-Kunden über mehrere Zahlungsdienstleister hinweg sicher zu registrieren, ohne Onboarding-Dienste zu skalieren, wodurch Probleme mit einem Ausfall durch einen Punkt des Ausfalls vermieden wurden.
+        \item Entwickelte und entwickelte robuste RESTful-APIs, die Java neben einer Reihe von serverlosen AWS-Komponenten, einschließlich AWS Lambda, DynamoDB, SQS und SNS, verwenden.
+        \item Modernisierte ältere mobile Web-Interfaces von JavaServer Pages (JSP) bis ReactJS mit Redux, was zu einer 8\% Verbesserung der Onboarding-Metriken und einer reduzierten Latenz führte.
+    \end{rSubsection}
+
+    \begin{rSubsection}{Amazon}{May 2022 - July 2022}{Software Development Engineer Intern}{Bangalore, India}
+        \item Konzeptualisiert und einen eigenständigen Backend-Service mit Spring Boot (Java) erstellt, um einen Core-UPI-Service zu testen.
+        \item Skalierte EC2-Instance-Infrastruktur dynamisch, um benutzerdefinierte Stresstest-Frameworks in einer simulierten Hochsicherheitsumgebung erfolgreich durchzuführen.
+        \item Erzielte eine 100 \%-Punktzahl in der Resilienzmetrik durch Messung und Dokumentation von Leistungsschwellen vor Abschluss des Praktikums.
+    \end{rSubsection}
+    
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%   Education section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Bildung}
+
+    \begin{rSubsectionNoBullet}{\bf Master of Science}{RWTH Aachen University}{Computer Engineering}{May 2026 - Present}
+        \italicitem{}
+    \end{rSubsectionNoBullet}
+    
+    \begin{rSubsectionNoBullet}{\bf Bachelor of Technology }{National Institute of Technology, Warangal}{Electronics and Communication Engineering}{May 2019 - June 2023}
+        \italicitem{Entwickelt eine starke mathematische Grundlage in Steuerungssystemen, fortschrittlicher Physik, algorithmischem Design auf niedrigem Niveau und Physik und Design von Halbleiterbauelementen.}
+    \end{rSubsectionNoBullet}
+
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%   Skills section
+%----------------------------------------------------------------------------------------
+
+\tableEnv{Fähigkeiten}{
+    \entry{Programmierung}{Go (Golang), Python, C++, Java, JavaScript, TypeScript, SQL}
+    
+    \entry{KI \& Datenanalyse}{Generative KI, Große Sprachmodelle (LLMs), TensorFlow, Keras, Pandas, Prompt Engineering, Datenaggregation}
+    
+    \entry{Cloud \& DevOps}{AWS (Lambda, DynamoDB, SQS, SNS), Kubernetes, Docker, ChaosMesh, Kafka, RabbitMQ, Jenkins}
+    
+    \entry{System Design}{Microservices, Serverless Architecture, Event-Driven Messaging, RESTful APIs, Distributed Systems, High-Throughput Data Pipelines}
+
+    \entry{Languages}{English (C2 - IELTS 8.0), German (A2 - Goethe Zertifikat)}
+}
+
+%----------------------------------------------------------------------------------------
+%   Certifications section
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{Certifications}
+
+    \begin{rSubsectionNoBullet}{\bf Certified Kubernetes Application Developer (CKAD)}{The Linux Foundation}{Cloud-Native Architecture Certification}{August 2026}
+        \plainitem{Praktische Kompetenz bei der Gestaltung, Erstellung, Konfiguration und Bereitstellung komplexer Cloud-nativer Anwendungen direkt für verteilte Kubernetes-Umgebungen.}
+    \end{rSubsectionNoBullet}
+    
+    \begin{rSubsectionNoBullet}{\bf Machine Learning Certification}{Stanford University (Coursera)}{Algorithmische Stiftung Zertifizierung}{December 2022}
+        \plainitem{Mathematische Grundlage des überwachten und unüberwachten Lernens.}
+    \end{rSubsectionNoBullet}
+    
+    \begin{rSubsectionNoBullet}{\bf Deep Learning Specialization}{Andrew Ng (Coursera)}{Angewandte Neurale Netzwerke Zertifizierung}{September 2020}
+        \plainitem{Convolutional Neural Networks (CNNs); Sequence Models; hyperparameter tuning; mathematical regularization; optimizing deep networks.}
+    \end{rSubsectionNoBullet}
+
+\end{rSection}
+
+\end{document}

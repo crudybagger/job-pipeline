@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Job Pipeline — Admin</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem; background: #f7f7f8; color: #222; }
+  h1 { font-size: 1.3rem; }
+  section { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  button { margin-right: 4px; padding: 2px 8px; cursor: pointer; }
+  pre { background: #f0f0f0; padding: 8px; overflow: auto; max-height: 300px; font-size: 0.8rem; }
+  input { padding: 4px; margin: 2px; }
+</style>
+</head>
+<body>
+<h1>Job Pipeline — Admin (Stage 1)</h1>
+<section>
+  <h2>Pipeline status</h2>
+  <pre id="status">loading…</pre>
+  <button onclick="refreshStatus()">Refresh</button>
+</section>
+<section>
+  <h2>Jobs</h2>
+  <label>Status:
+    <select id="queue">
+      <option value="new">new</option>
+      <option value="accepted">accepted</option>
+      <option value="rejected">rejected</option>
+      <option value="resume_ready">resume_ready</option>
+      <option value="sent">sent</option>
+    </select>
+  </label>
+  <button onclick="loadJobs()">Load</button>
+  <table id="jobs">
+    <thead>
+      <tr><th>ID</th><th>Title</th><th>Company</th><th>Location</th><th>Source</th><th>Score</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+<section>
+  <h2>Stage 1 run</h2>
+  <label>Source <input id="source" placeholder="(all enabled)"></label>
+  <label>Limit <input id="limit" type="number" placeholder="∞"></label>
+  <label>Dry run <input id="dry" type="checkbox"></label>
+  <button onclick="runStage1()">Run</button>
+  <pre id="run-result"></pre>
+</section>
+<section>
+  <h2>Job detail / edit</h2>
+  <label>ID <input id="job-id" placeholder="job id"></label>
+  <button onclick="showJob()">Show</button>
+  <pre id="detail"></pre>
+  <label>Note <input id="note" placeholder="add a note"></label>
+  <button onclick="addNote()">Add note</button>
+</section>
+<script>
+const API = "";
+
+async function refreshStatus() {
+  const r = await fetch(API + "/status");
+  document.getElementById("status").textContent = JSON.stringify(await r.json(), null, 2);
+}
+
+async function loadJobs() {
+  const status = document.getElementById("queue").value;
+  const r = await fetch(API + "/jobs?status=" + status);
+  const jobs = await r.json();
+  const tbody = document.querySelector("#jobs tbody");
+  tbody.innerHTML = "";
+  for (const job of jobs) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + job.id + "</td><td>" + (job.title || "") + "</td><td>"
+      + (job.company_name || "") + "</td><td>" + (job.location || "") + "</td><td>"
+      + (job.source || "") + "</td><td>" + (job.score ?? "") + "</td><td></td>";
+    const td = tr.lastElementChild;
+    const accept = document.createElement("button");
+    accept.textContent = "accept";
+    accept.onclick = () => transition(job.id, "accept");
+    const reject = document.createElement("button");
+    reject.textContent = "reject";
+    reject.onclick = () => transition(job.id, "reject");
+    td.append(accept, reject);
+    tbody.append(tr);
+  }
+}
+
+async function transition(id, action) {
+  await fetch(API + "/jobs/" + id + "/" + action, { method: "POST" });
+  loadJobs(); refreshStatus();
+}
+
+async function runStage1() {
+  const source = document.getElementById("source").value;
+  const limit = document.getElementById("limit").value;
+  const dry = document.getElementById("dry").checked;
+  let url = source ? API + "/ingest" : API + "/stage1/run?";
+  const params = new URLSearchParams();
+  if (limit) params.set("limit", limit);
+  if (dry) params.set("dry_run", "true");
+  let r;
+  if (source) {
+    r = await fetch(API + "/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source, limit: limit ? Number(limit) : null, dry_run: dry }),
+    });
+  } else {
+    r = await fetch(API + "/stage1/run?" + params.toString(), { method: "POST" });
+  }
+  document.getElementById("run-result").textContent = JSON.stringify(await r.json(), null, 2);
+  refreshStatus();
+}
+
+async function showJob() {
+  const id = document.getElementById("job-id").value.trim();
+  const r = await fetch(API + "/jobs/" + id);
+  document.getElementById("detail").textContent = JSON.stringify(await r.json(), null, 2);
+}
+
+async function addNote() {
+  const id = document.getElementById("job-id").value.trim();
+  const note = document.getElementById("note").value;
+  await fetch(API + "/jobs/" + id + "/note", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note }),
+  });
+  document.getElementById("note").value = "";
+  showJob();
+}
+
+refreshStatus();
+</script>
+</body>
+</html>

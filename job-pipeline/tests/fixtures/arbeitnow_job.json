@@ -1,0 +1,13 @@
+{
+  "source": "arbeitnow",
+  "slug": "werkstudent-softwareentwicklung-aachen-77234",
+  "company_name": "Example GmbH",
+  "title": "Werkstudent Softwareentwicklung (m/w/d)",
+  "description": "<h2>Deine Aufgaben</h2><p>Unterstützung unseres Backend-Teams mit Python, Java, AWS, Docker, Kubernetes, Kafka und Microservices. Flexible Arbeitszeiten, Homeoffice möglich. Bewerbung an jobs@example-gmbh.de</p>",
+  "remote": true,
+  "url": "https://www.arbeitnow.com/jobs/werkstudent-softwareentwicklung-aachen-77234",
+  "tags": ["werkstudent", "python", "java", "it"],
+  "job_types": ["internship", "working student"],
+  "location": "Aachen",
+  "created_at": 1790438426
+}

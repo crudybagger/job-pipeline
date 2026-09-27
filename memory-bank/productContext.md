@@ -53,5 +53,5 @@ A single job-seeking candidate (the repository owner) who wants automation of di
 - **Version 1.0**: Initialized from repository context and `plan.md`
 
 ## Notes
-- Implementation status: all stage logic is currently placeholder (`TODO`) scaffolding in `job-pipeline/src/`; the FastAPI app only exposes `/` (health) and `POST /ingest` (returns count from a placeholder fetcher).
+- Implementation status: **Stage 1 (Job Scraping and Filtering) is implemented, tested, and validated with real web data** — config (`config/pipeline.json`), ingestion (Remotive/RemoteOK/Arbeitnow/Bundesagentur + HTML-stub seam), parsing, deterministic scoring with location gate and re-tunable weights, SQLite queues with transition enforcement, CLI + unified FastAPI routes + admin UI at `GET /ui`. LLM/Telegram/research integrations (Stages 2–4) remain placeholders.
 

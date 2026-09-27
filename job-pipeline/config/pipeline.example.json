@@ -1,0 +1,42 @@
+{
+  "sources": [
+    { "name": "remotive", "type": "api", "url": "https://remotive.com/api/remote-jobs?limit=100", "enabled": true },
+    { "name": "remoteok", "type": "api", "url": "https://remoteok.com/api", "enabled": true },
+    { "name": "arbeitnow", "type": "api", "url": "https://www.arbeitnow.com/api/job-board-api", "enabled": true },
+    { "name": "bundesagentur", "type": "api", "url": "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobs?was=werkstudent&wo=Aachen&umkreis=100&page=1&size=50", "enabled": true },
+    { "name": "html-stub", "type": "html", "url": "", "enabled": false }
+  ],
+  "search_keywords": ["werkstudent", "working student", "backend", "python"],
+  "matching": {
+    "score_weights": { "experience": 1.0, "prospects": 1.0, "education": 1.0 },
+    "match_threshold": 50,
+    "auto_accept_above_threshold": false,
+    "in_demand_technologies": ["aws", "kubernetes", "python"],
+    "role_keywords": ["werkstudent", "hiwi", "working student", "intern"],
+    "location_keywords": ["aachen", "köln", "cologne"],
+    "remote_indicators": ["remote", "worldwide", "anywhere"],
+    "require_location_fit": true
+  },
+  "candidate_profile": {
+    "skills": ["python", "java", "aws", "kubernetes"],
+    "experience": ["Software Engineer example entry"],
+    "education": ["B.Tech Computer Science"],
+    "location": "Aachen",
+    "languages": ["english", "german"]
+  },
+  "base_resume_path": "../data/Resume.tex",
+  "stage2": {
+    "ats_ready_threshold": 80,
+    "max_iterations": 5,
+    "latex_section_markers": {}
+  },
+  "stage3": {
+    "research_providers": [],
+    "story_context": {},
+    "narrative_pattern": ""
+  },
+  "stage4": {
+    "messaging": {},
+    "message_template": ""
+  }
+}

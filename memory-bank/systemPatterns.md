@@ -54,7 +54,7 @@ Planned queues (per `plan.md`): accepted, rejected, resume-ready, sent — all i
 - Test environment: pytest from `job-pipeline/` (3 tests pass).
 
 ## Critical Implementation Paths
-- Stage 1: implement real scraping in `src/ingestion/ingest.py` + normalization in `src/parsing/parse.py`; wire score filter into `src/matching/match.py`; add persistent queues.
+- Stage 1 (**done**): real scraping in `src/ingestion/ingest.py` + normalization in `src/parsing/parse.py`; scoring in `src/matching/match.py` (location gate + re-tunable weights); persistent queues in `src/queues/store.py` (SQLite, transition map) + tooling in `src/queues/cli.py`; orchestrator `src/stage1.py` shared by the API (`app/main.py`) and the CLI.
 - Stage 2: LaTeX resume editing + ATS substage loop (new queue; notes round-trip via job metadata).
 - Stage 3: company research + fixed narrative-pattern cover letter generation.
 - Stage 4: message compilation + messaging-platform integration + sent/applied tracking with candidate notes.

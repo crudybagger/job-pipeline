@@ -1,0 +1,13 @@
+{
+  "source": "bundesagentur",
+  "titel": "Werkstudent Softwareentwicklung (m/w/d)",
+  "beruf": "Werkstudent - Softwareentwicklung",
+  "arbeitgeber": "RWTH Example Chair",
+  "arbeitsort": { "ort": "Aachen", "plz": "52062", "region": "Kreis Aachen", "kreis": "STÄDTEREGION AACHEN", "land": "Nordrhein-Westfalen" },
+  "eintrittsdatum": "2026-11-01",
+  "refnr": "10000-1000000001-B",
+  "distanz": 12.34,
+  "externeUrl": "https://example-rwth.de/jobs/werkstudent-sw",
+  "jobDetailURL": "https://www.arbeitsagentur.de/jobsuche/jobdetail/10000-1000000001-B",
+  "modifikationsTimestamp": 1790438426000
+}
