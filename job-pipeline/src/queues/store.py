@@ -199,6 +199,36 @@ class JobsStore:
         return updated
 
 
+    def update_metadata(self, job_id: str, updates: dict) -> JobEntry:
+        """Merge stage-owned metadata updates into a job entry.
+
+        Unlike edit_job, this accepts stage-owned registry keys
+        (metadata.ats, metadata.resume, ...) — it is the round-trip
+        surface substages use to persist their results (store.save's
+        existing-value-wins merge would discard stage results). Each
+        key replaces the existing value wholesale. Unknown IDs raise
+        KeyError. No transition logic is involved.
+        """
+        entry = self.get(job_id)
+        if entry is None:
+            raise KeyError(f"Unknown job id: {job_id}")
+        if not updates:
+            return entry
+        metadata = dict(entry.metadata)
+        metadata.update(updates)
+        updated = entry.model_copy(update={"metadata": metadata})
+        self._conn.execute(
+            "UPDATE jobs SET updated_at = ?, payload = ? WHERE id = ?",
+            (
+                _now(),
+                json.dumps(updated.model_dump(mode="json")),
+                job_id,
+            ),
+        )
+        self._conn.commit()
+        return updated
+
+
 # Human-owned fields editable through the guarded generic edit surface
 # (PATCH /jobs/{id} and the CLI `edit` subcommand). id, status and
 # stage-owned metadata registry keys are immutable there.

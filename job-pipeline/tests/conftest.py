@@ -120,3 +120,47 @@ def pipeline_config(matching, candidate_profile) -> PipelineConfig:
     config.candidate_profile = CandidateProfile(**candidate_profile)
     config.base_resume_path = "../data/Resume.tex"
     return config
+
+
+class FakeLLMClient:
+    """Scripted stand-in for LLMClient (no network); records calls."""
+
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.calls = []
+
+    def complete(self, system, user, schema=None):
+        self.calls.append({"system": system, "user": user, "schema": schema})
+        if not self.responses:
+            raise AssertionError("Unexpected LLM call (scripted responses exhausted)")
+        item = self.responses.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item if isinstance(item, str) else json.dumps(item)
+
+
+BASE_RESUME_FIXTURE = FIXTURES_DIR / "base_resume.tex"
+
+
+@pytest.fixture
+def base_resume_tex() -> str:
+    """Mini LaTeX base resume with rSection/tableEnv blocks."""
+    return BASE_RESUME_FIXTURE.read_text(encoding="utf-8")
+
+
+@pytest.fixture
+def fake_llm(monkeypatch):
+    """Install a scripted LLM client; returns an installer function."""
+    from src.llm import provider
+
+    installed = []
+
+    def _install(responses):
+        client = FakeLLMClient(responses)
+        installed.append(client)
+        provider.set_client(client)
+        return client
+
+    yield _install
+    provider.set_client(None)
+    installed.clear()

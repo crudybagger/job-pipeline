@@ -19,6 +19,13 @@ from src.models import JobStatus
 from src.queues import store as store_module
 from src.queues.store import JobsStore, edit_job
 from src.stage1 import run_stage1
+from src.resume.ats import (
+    combine_scores,
+    score_resume,
+    score_resume_deterministic,
+)
+from src.resume.generate import load_resume_artifact, resolve_base_resume_path
+from src.resume.stage2 import force_ready, run_ats_substage, run_stage2
 from src.queues.cli import _entry_brief
 
 app = FastAPI(title="Job Pipeline API")
@@ -80,12 +87,19 @@ async def status():
     store = get_store()
     try:
         counts = store.count_by_status()
+        accepted = store.list_by_status(JobStatus.ACCEPTED.value)
+        needs_review = sum(
+            1
+            for entry in accepted
+            if (entry.metadata.get("ats") or {}).get("needs_review")
+        )
         return {
             "queues": counts,
             "stages": {
                 "stage1": {"implemented": True, "pending_review": counts.get("new", 0)},
-                "stage2": {"implemented": False,
-                           "eligible": counts.get("accepted", 0)},
+                "stage2": {"implemented": True,
+                           "eligible": counts.get("accepted", 0),
+                           "pending_review": needs_review},
                 "stage3": {"implemented": False,
                            "eligible": counts.get("resume_ready", 0)},
                 "stage4": {"implemented": False,
@@ -171,6 +185,53 @@ async def patch_job(job_id: str, request: EditRequest):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     finally:
         store.close()
+    return JSONResponse(json.loads(json.dumps(entry.model_dump(mode="json"))))
+
+
+class ResumeAction(BaseModel):
+    """Empty body placeholder for the Stage-2 per-job resume routes."""
+
+    pass
+
+
+@app.post("/stage2/run")
+async def stage2_run(limit: int | None = None, dry_run: bool = False):
+    """Batch Stage-2 run over accepted entries (generate -> ATS loop)."""
+    return run_stage2(store=get_store(), limit=limit, dry_run=dry_run)
+
+
+@app.post("/jobs/{job_id}/resume/generate")
+async def resume_generate(job_id: str, run_to_completion: bool = True):
+    """Run the Stage-2 loop for one accepted job (generate -> ATS -> re-edit)."""
+    try:
+        return run_stage2(store=get_store(), job_id=job_id,
+                          run_to_completion=run_to_completion)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/jobs/{job_id}/resume/ats")
+async def resume_ats(job_id: str):
+    """Substage-only ATS scoring: appends to metadata.ats; no transition."""
+    try:
+        return run_ats_substage(get_store(), job_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/jobs/{job_id}/resume/force-ready")
+async def resume_force_ready(job_id: str):
+    """Human promotion of a needs_review (or any accepted) entry to resume_ready."""
+    try:
+        entry = force_ready(get_store(), job_id)
+    except store_module.InvalidTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return JSONResponse(json.loads(json.dumps(entry.model_dump(mode="json"))))
 
 

@@ -13,11 +13,16 @@ The repository is a monorepo rooted at `/e/jobs` containing the product blueprin
 ├── memory-bank/             # This memory bank
 └── job-pipeline/            # Main Python project
     ├── app/main.py          # FastAPI app: GET / (health), POST /ingest
-    ├── src/                 # Stage packages (all placeholder logic)
-    │   ├── ingestion/ingest.py        # fetch_job_listings() → returns []
-    │   ├── parsing/parse.py           # parse_job_listing() → returns input
-    │   ├── matching/match.py          # match_candidate_to_job() → False
-    │   ├── outreach/send_application.py  # send_application() → True
+    ├── src/                 # Stage packages (Stage 1 implemented; Stage 2 code complete)
+    │   ├── stage1.py                  # run_stage1() orchestrator (API + CLI share it)
+    │   ├── stage2.py-equivalent: src/resume/stage2.py  # run_stage2()/run_ats_substage()/force_ready()
+    │   ├── llm/                       # Shared foundation: provider.py (LLMClient, complete() seam)
+    │   ├── resume/                    # Stage 2: generate.py, ats.py, loop.py, stage2.py
+    │   ├── ingestion/ingest.py        # fetchers: remotive/remoteok/arbeitnow/bundesagentur + html-stub
+    │   ├── parsing/parse.py           # parse_job_listing() dispatch
+    │   ├── matching/match.py          # compute_match_score() + location gate
+    │   ├── outreach/send_application.py  # send_application() → True (Stage 4 scope)
+    │   ├── queues/{store,cli}.py      # SQLite store (+ update_metadata) + CLI (incl. resume-* subcommands)
     │   ├── high_level_design_hld.py   # Placeholder (Issue #1, Done)
     │   └── low_level_design_lld.py    # Placeholder (Issue #2, Done)
     ├── automation/          # Local issue-tracker automation
@@ -33,10 +38,10 @@ The repository is a monorepo rooted at `/e/jobs` containing the product blueprin
 ## Architecture / Data Flow
 ```
 Job boards → Ingestion (Stage 1) → Parsing → Matching (score filter)
-        → accepted/rejected queues (persistent, planned)
-        → Resume generation + ATS loop (Stage 2) → resume-ready queue
-        → Cover letter generation (Stage 3)
-        → Delivery package + messaging (Stage 4) → sent queue + tracking
+        → accepted/rejected queues (persistent; SQLite jobs table)
+        → Resume generation + ATS loop (Stage 2; src/resume/) → resume_ready status
+        → Cover letter generation (Stage 3, pending)
+        → Delivery package + messaging (Stage 4, pending) → sent status + tracking
 ```
 Planned queues (per `plan.md`): accepted, rejected, resume-ready, sent — all in persistent storage.
 
@@ -55,7 +60,7 @@ Planned queues (per `plan.md`): accepted, rejected, resume-ready, sent — all i
 
 ## Critical Implementation Paths
 - Stage 1 (**done**): real scraping in `src/ingestion/ingest.py` + normalization in `src/parsing/parse.py`; scoring in `src/matching/match.py` (location gate + re-tunable weights); persistent queues in `src/queues/store.py` (SQLite, transition map) + tooling in `src/queues/cli.py`; orchestrator `src/stage1.py` shared by the API (`app/main.py`) and the CLI.
-- Stage 2: LaTeX resume editing + ATS substage loop (new queue; notes round-trip via job metadata).
+- Stage 2 (**code complete**; LLD `docs/design/stage2-lld.md`): `src/resume/generate.py` (section-targeted editing + difflib span validation) → `ats.py` (LLM + deterministic scorers, combine 0.7/0.3) → `loop.py` (feedback round-trip via `metadata.ats` + `JobsStore.update_metadata`; only place transitioning `accepted → resume_ready`; cap → `needs_review`) → `stage2.py` orchestrator. Shared `src/llm/` seam: `set_client()`/`complete()` — tests monkey-patch the client (no live network).
 - Stage 3: company research + fixed narrative-pattern cover letter generation.
 - Stage 4: message compilation + messaging-platform integration + sent/applied tracking with candidate notes.
 

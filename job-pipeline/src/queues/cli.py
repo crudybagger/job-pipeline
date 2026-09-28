@@ -10,6 +10,10 @@ Usage (from job-pipeline/):
     python -m src.queues.cli note <id> <text>
     python -m src.queues.cli edit <id> title="New title" location=Remote
     python -m src.queues.cli run [--source remotive] [--limit 50] [--dry-run]
+    python -m src.queues.cli resume-generate <id> [--single]
+    python -m src.queues.cli resume-ats <id>
+    python -m src.queues.cli resume-force-ready <id>
+    python -m src.queues.cli resume-run [--limit 50] [--dry-run] [--single]
 
 `--config PATH` selects a config file for the run subcommand. The edit
 subcommand only accepts whitelist fields (same as PATCH /jobs/{id}).
@@ -24,6 +28,7 @@ from src.config import load_config
 from src.models import JobStatus
 from src.queues.store import JobsStore, edit_job
 from src.stage1 import run_stage1
+from src.resume.stage2 import force_ready, run_ats_substage, run_stage2
 
 
 def _entry_brief(entry) -> dict:
@@ -97,6 +102,27 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--limit", type=int, default=None)
     run.add_argument("--dry-run", action="store_true")
 
+    resume_generate = sub.add_parser("resume-generate")
+    resume_generate.add_argument("job_id")
+    resume_generate.add_argument(
+        "--single", action="store_true",
+        help="run a single generate+score iteration instead of the loop",
+    )
+
+    resume_ats = sub.add_parser("resume-ats")
+    resume_ats.add_argument("job_id")
+
+    resume_force_ready = sub.add_parser("resume-force-ready")
+    resume_force_ready.add_argument("job_id")
+
+    resume_run = sub.add_parser("resume-run")
+    resume_run.add_argument("--limit", type=int, default=None)
+    resume_run.add_argument("--dry-run", action="store_true")
+    resume_run.add_argument(
+        "--single", action="store_true",
+        help="run a single generate+score iteration instead of the loop",
+    )
+
     return parser
 
 
@@ -149,10 +175,35 @@ def main(argv: list[str] | None = None) -> int:
                 dry_run=args.dry_run,
             )
             print(json.dumps(summary, indent=2))
+        elif args.command == "resume-generate":
+            config = load_config(args.config_path)
+            summary = run_stage2(
+                config,
+                store,
+                job_id=args.job_id,
+                run_to_completion=not args.single,
+            )
+            print(json.dumps(summary, indent=2))
+        elif args.command == "resume-ats":
+            config = load_config(args.config_path)
+            print(json.dumps(run_ats_substage(store, args.job_id, config), indent=2))
+        elif args.command == "resume-force-ready":
+            entry = force_ready(store, args.job_id)
+            print(json.dumps(_entry_brief(entry), indent=2))
+        elif args.command == "resume-run":
+            config = load_config(args.config_path)
+            summary = run_stage2(
+                config,
+                store,
+                limit=args.limit,
+                dry_run=args.dry_run,
+                run_to_completion=not args.single,
+            )
+            print(json.dumps(summary, indent=2))
     except KeyError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    except ValueError as exc:
+    except (FileNotFoundError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     finally:
