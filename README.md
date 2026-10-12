@@ -24,9 +24,10 @@ material, and sends a review-ready package to the candidate.
 
 ## Configuration and running each stage
 
-> **Current state:** this repository currently contains scaffolding,
-> placeholders, and automation utilities. The sections below document how each
-> stage is intended to be configured/run and where to integrate implementation.
+> **Current state:** Stages 1 and 2 are implemented and tested (155 tests, no
+> live network in CI). Stage 1 is validated against real web data; Stage 2 real
+> (non-test) runs need `LLM_API_KEY` in `./job-pipeline/.env`. The Stage 3–4
+> sections document how each stage is intended to be configured/run.
 
 ### Shared setup
 
@@ -64,13 +65,30 @@ pip install -r requirements.txt
   `./docs/stage1-context-and-usage.md`; cross-stage contract:
   `./docs/design/pipeline-integration.md`.
 
-### Stage 2 — Matching Resume Generation
+### Stage 2 — Matching Resume Generation (implemented)
 
-- **Configure:** base resume path, keyword/experience weighting, ATS acceptance
-  threshold, and retry loop limits.
-- **Run target:** implement stage logic under
-  `./job-pipeline/src/` and expose an
-  entrypoint (API route, CLI, or worker) consistent with Stage 1 patterns.
+- **Implemented:** `./job-pipeline/src/resume/` — `generate.py` (section-targeted
+  LaTeX editing with difflib span validation), `ats.py` (LLM + deterministic ATS
+  scoring, combined 0.7/0.3), `loop.py` (feedback round-trip loop), `stage2.py`
+  (orchestrator) — on the shared `src/llm/` OpenAI-compatible provider.
+- **Configure:** `./job-pipeline/config/pipeline.json` — `stage2.ats_ready_threshold`,
+  `stage2.max_iterations`, `stage2.latex_section_markers` (set for the real
+  `data/Resume.tex`); `LLM_API_KEY` (+ optional `LLM_BASE_URL`, `LLM_MODEL`) in `.env`.
+- **Run targets:**
+  - FastAPI: `POST /stage2/run?limit=&dry_run=`,
+    `POST /jobs/{id}/resume/generate?run_to_completion=`,
+    `POST /jobs/{id}/resume/ats`, `POST /jobs/{id}/resume/force-ready`;
+    `GET /status` reports stage2 `implemented`/`eligible`/`pending_review`.
+  - CLI (from `./job-pipeline`): `python -m src.queues.cli resume-generate <id>
+    [--single] | resume-ats <id> | resume-force-ready <id> | resume-run
+    [--limit N] [--dry-run] [--single]`.
+  - Live check with real LLM calls (manual, not part of `pytest`):
+    `python scripts/stage2_live.py [--dry-run] [--job-id <id>] [--single]`
+    (requires `LLM_API_KEY` in `.env`).
+  - Artifacts: `data/resumes/<job_id>.tex`; iteration history round-trips via
+    `metadata.ats`/`metadata.resume` (visible on `GET /jobs/{id}`).
+- **LLD:** `./docs/design/stage2-lld.md`; HLD:
+  `./docs/design/stage2-resume-generation.md`.
 
 ### Stage 3 — Matching Cover Letter Generation
 

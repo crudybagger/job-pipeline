@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 ## Common Commands
 - Run API: `uvicorn app.main:app --reload` (from `job-pipeline/`); unified surface: `POST /ingest` `{"source": "remotive"}`, `POST /stage1/run?limit=&dry_run=`, `GET /status`, `GET /jobs?status=`, `GET /jobs/{id}`, `POST /jobs/{id}/accept|reject|note`, `PATCH /jobs/{id}`, `GET /ui`
-- Run tests: `pytest -q` (from `job-pipeline/`) — currently **115 passed** via `.venv/bin/python -m pytest -q`
+- Run tests: `pytest -q` (from `job-pipeline/`) — currently **155 passed** via `.venv/bin/python -m pytest -q`
 - Stage 1 CLI: `python -m src.queues.cli status | view <status> | view-accepted | view-rejected | show <id> | accept <id> | reject <id> | note <id> <text> | edit <id> field=value | run [--source NAME] [--limit N] [--dry-run]`
 - Live isolation check (manual, real web data): `python scripts/stage1_live.py [--dry-run]`; rejected-list analysis for re-tuning: `python scripts/analyze_rejected.py`
 - Issue automation loop: `python -m automation.run_issue_loop` (processes `issues.md` every 600s; commits+pushes if `.git` present)

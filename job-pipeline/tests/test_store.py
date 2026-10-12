@@ -117,3 +117,53 @@ def test_store_persists_across_connections(tmp_db_path, sample_job_entry):
     second.close()
     assert fetched is not None
     assert fetched.title == sample_job_entry.title
+
+# --- Stage 2 store extension: update_metadata (docs/design/stage2-lld.md) ---
+
+
+def test_update_metadata_merges_new_keys(store, sample_job_entry):
+    store.save(sample_job_entry)
+    updated = store.update_metadata(
+        sample_job_entry.id,
+        {"ats": {"iterations": [{"iteration": 1, "score": 80}], "needs_review": False}},
+    )
+    # The new stage-owned key lands; existing human/metadata keys survive.
+    assert updated.metadata["ats"]["needs_review"] is False
+    assert updated.metadata["score"] == 62
+    assert updated.metadata["notes"] == sample_job_entry.metadata["notes"]
+
+
+def test_update_metadata_replaces_per_key(store, sample_job_entry):
+    store.save(sample_job_entry)
+    store.update_metadata(
+        sample_job_entry.id, {"ats": {"iterations": [], "needs_review": False}}
+    )
+    updated = store.update_metadata(
+        sample_job_entry.id,
+        {"ats": {"iterations": [{"iteration": 2, "score": 90}], "needs_review": True}},
+    )
+    # Per-key wholesale replacement: the previous ats value is gone.
+    assert updated.metadata["ats"] == {
+        "iterations": [{"iteration": 2, "score": 90}],
+        "needs_review": True,
+    }
+
+
+def test_update_metadata_persists(tmp_db_path, sample_job_entry):
+    first = JobsStore(tmp_db_path)
+    first.save(sample_job_entry)
+    first.update_metadata(
+        sample_job_entry.id,
+        {"resume": {"path": "/abs/data/resumes/x.tex", "iterations": 1}},
+    )
+    first.close()
+    second = JobsStore(tmp_db_path)
+    fetched = second.get(sample_job_entry.id)
+    second.close()
+    assert fetched.metadata["resume"]["path"] == "/abs/data/resumes/x.tex"
+
+
+def test_update_metadata_unknown_id_raises(store):
+    with pytest.raises(KeyError):
+        store.update_metadata("nope", {"ats": {"iterations": []}})
+

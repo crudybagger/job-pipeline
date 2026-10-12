@@ -21,8 +21,8 @@ Tracks what works, what remains to build, current status, known issues, and evol
 - ✅ CI: GitHub Actions runs `pytest -q` on push/PR to `main` (Python 3.12).
 
 ## What's Left to Build
-- ⬜ **Stage 2 test wrap-up**: `tests/test_loop.py` (threshold/cap/round-trip/single-iteration/status guards), `tests/test_stage2.py` (selection/dry-run/skip/error isolation/job_id guards); additions to `test_api.py` (new routes incl. 409s, status payload), `test_cli.py` (resume subcommands), `test_store.py` (`update_metadata`).
-- ⬜ **Stage 2 docs wrap-up**: implementation-status note on `docs/design/stage2-resume-generation.md` (incl. the `metadata.ats` shape amendment); root + job-pipeline README stage-2 sections; optional `scripts/stage2_live.py` manual live check.
+- ✅ **Stage 2 test wrap-up**: `test_loop.py`, `test_stage2.py`, api/cli/store additions all green — including the fixed single-entry surface contract (generate route + `resume-generate` CLI return the per-entry loop result; `run_stage2` keeps the uniform batch summary) and the `test_store.py` `update_metadata` coverage. Suite: **155 passed**.
+- ✅ **Stage 2 docs wrap-up**: implementation-status note on `docs/design/stage2-resume-generation.md` (incl. the `metadata.ats` shape amendment); root + job-pipeline README Stage-2 sections; `scripts/stage2_live.py` manual live check added (verified: graceful per-entry LLMError handling); root `.gitignore` added for `/e/jobs/.venv`.
 - ⬜ **Real-run prerequisite**: `LLM_API_KEY` (+ optional `LLM_BASE_URL`/`LLM_MODEL`) in `job-pipeline/.env` — absent; all Stage-2 LLM calls raise `LLMError` until set (tests unaffected).
 - ❌ **Stage 3** (per `docs/design/stage3-cover-letter-generation.md`): Tavily-first modular research chain with graceful degradation; cover letter generation following the fixed narrative pattern; artifacts on disk.
 - ❌ **Stage 4** (per `docs/design/stage4-candidate-delivery.md`): two-part delivery compilation (text + resume `sendDocument`); idempotent Telegram Bot API integration; sent/applied tracking with candidate notes in metadata.
@@ -30,7 +30,7 @@ Tracks what works, what remains to build, current status, known issues, and evol
 - ⬜ Optional Stage 1 follow-ups: validate the Bundesagentur source from a residential network (403 from datacenter IPs); RWTH Aachen HiWi HTML fetcher via the `html-stub` seam.
 
 ## Current Status
-**Stage 1 done (84 tests, live-validated). Stage 2 + shared `src/llm/` foundation: production code, API/CLI surfaces, configs, and LLD complete; first test wave green — full suite 115 passed.** Remaining before Stage 3: the last Stage-2 test files, doc status notes, and the `.env` LLM key for real runs.
+**Stage 1 done (live-validated). Stage 2 done: code, surfaces, configs, LLD, tests (155 passing), and docs complete.** Nothing blocking Stage 3 — only the `.env` `LLM_API_KEY` for a real Stage-2 run and the optional `scripts/stage2_live.py` remain.
 
 ## Known Issues
 - `LLM_API_KEY` not configured — every Stage-2 LLM call raises `LLMError` (batch records per-entry errors and continues; tests use the fake client).
@@ -55,11 +55,10 @@ Tracks what works, what remains to build, current status, known issues, and evol
 - M1: Repository scaffolding + issue tracker automation ✅
 - M2: Stage 1 — scraping, filtering, persistent queues ✅
 - M2.5: Shared foundation — `src/llm/` OpenAI-compatible abstraction ✅
-- M3: Stage 2 — resume generation + ATS loop ✅ (code + surfaces; test/docs wrap-up pending)
+- M3: Stage 2 — resume generation + ATS loop ✅ (code, surfaces, tests, docs)
 - Memory bank initialized ✅
 
 ## Upcoming Milestones
-- M3 wrap-up: `test_loop`/`test_stage2` + api/cli/store additions; docs + README updates
 - M4: Stage 3 — cover letter generation
 - M5: Stage 4 — delivery package + messaging integration
 
@@ -67,6 +66,7 @@ Tracks what works, what remains to build, current status, known issues, and evol
 - **Version 1.0**: Initialized from repository context
 - **Version 1.1**: Stage 1 complete
 - **Version 1.2**: Stage 2 + `src/llm/` mid-flight (code complete, 115 tests passing)
+- **Version 1.3**: Stage 2 wrap-up complete (surface contract fix, store tests, docs; 155 passing)
 
 ## Notes
 - Verify CI actually runs green on the next push (last known commit `f1dbbbc` predates Stage 2).

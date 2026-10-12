@@ -1,0 +1,5 @@
+# Root-level ignores (the project .gitignore lives in job-pipeline/)
+.venv/
+.venvtest/
+.pytest_cache/
+__pycache__/

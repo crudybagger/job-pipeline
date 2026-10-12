@@ -175,3 +175,148 @@ def test_patch_whitelist(client, store):
         "/jobs/abc123def456", json={"updates": {"status": "accepted"}}
     )
     assert response.status_code == 422
+
+# --- Stage 2 routes (docs/design/stage2-lld.md) ------------------------------
+
+from pathlib import Path
+
+from src.resume import generate as gen
+from src.resume import stage2 as stage2_module
+
+BASE_RESUME = Path(__file__).resolve().parent / "fixtures" / "base_resume.tex"
+
+_STAGE2_EDIT_RESPONSE = {
+    "summary": "Tailored summary mentioning Kubernetes and Python.",
+    "experience": "\\item Engineered Kubernetes systems with Go.",
+    "skills": "\\entry{Programming}{Go, Python, AWS}",
+}
+
+
+def _stage2_config(pipeline_config):
+    from src.config import Stage2Config
+
+    pipeline_config.stage2 = Stage2Config(
+        ats_ready_threshold=60, max_iterations=1, latex_section_markers={}
+    )
+    return pipeline_config
+
+
+def _seed_accepted(store, job_id="abc123def456"):
+    entry = JobEntry(
+        id=job_id,
+        title="Werkstudent Softwareentwicklung",
+        company_name="Example GmbH",
+        location="Aachen",
+        source="arbeitnow",
+        status=JobStatus.ACCEPTED,
+        metadata={
+            "score": 62,
+            "notes": "",
+            "base_resume_path": str(BASE_RESUME),
+        },
+    )
+    store.save(entry)
+    return entry
+
+
+def test_stage2_status_summary(client, store):
+    _seed_accepted(store)
+    store.update_metadata(
+        "abc123def456", {"ats": {"iterations": [], "needs_review": True}}
+    )
+    data = client.get("/status").json()
+    stage2 = data["stages"]["stage2"]
+    assert stage2["implemented"] is True
+    assert stage2["eligible"] == 1
+    assert stage2["pending_review"] == 1
+
+
+def test_stage2_run_dry_run(client, store):
+    _seed_accepted(store)
+    response = client.post("/stage2/run?dry_run=true")
+    assert response.status_code == 200
+    summary = response.json()
+    assert summary["dry_run"] is True
+    assert summary["selected"] == 1
+    assert summary["processed"] == 0
+
+
+def test_stage2_run_batch(
+    client, store, fake_llm, monkeypatch, tmp_path, pipeline_config
+):
+    monkeypatch.setattr(gen, "RESUMES_DIR", tmp_path / "resumes")
+    monkeypatch.setattr(
+        stage2_module, "load_config", lambda path=None: _stage2_config(pipeline_config)
+    )
+    _seed_accepted(store)
+    fake_llm([_STAGE2_EDIT_RESPONSE, {"score": 100, "feedback": "", "ready": True}])
+    response = client.post("/stage2/run")
+    assert response.status_code == 200
+    summary = response.json()
+    assert summary["processed"] == 1
+    assert summary["resume_ready"] == 1
+    assert store.get("abc123def456").status == JobStatus.RESUME_READY
+
+
+def test_resume_generate_route_success(
+    client, store, fake_llm, monkeypatch, tmp_path, pipeline_config
+):
+    monkeypatch.setattr(gen, "RESUMES_DIR", tmp_path / "resumes")
+    monkeypatch.setattr(
+        stage2_module, "load_config", lambda path=None: _stage2_config(pipeline_config)
+    )
+    _seed_accepted(store)
+    fake_llm([_STAGE2_EDIT_RESPONSE, {"score": 100, "feedback": "", "ready": True}])
+    response = client.post("/jobs/abc123def456/resume/generate")
+    assert response.status_code == 200
+    assert response.json()["status"] == "resume_ready"
+    assert store.get("abc123def456").status == JobStatus.RESUME_READY
+
+
+def test_resume_generate_route_single_iteration(
+    client, store, fake_llm, monkeypatch, tmp_path, pipeline_config
+):
+    monkeypatch.setattr(gen, "RESUMES_DIR", tmp_path / "resumes")
+    monkeypatch.setattr(
+        stage2_module, "load_config", lambda path=None: _stage2_config(pipeline_config)
+    )
+    _seed_accepted(store)
+    fake_llm(
+        [_STAGE2_EDIT_RESPONSE, {"score": 30, "feedback": "keep going", "ready": False}]
+    )
+    response = client.post("/jobs/abc123def456/resume/generate?run_to_completion=false")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "accepted"
+    assert payload["needs_review"] is False
+    assert payload["iterations"] == 1
+
+
+def test_resume_generate_route_guards(client, store):
+    _seed(store)  # NEW status -> not accepted.
+    response = client.post("/jobs/abc123def456/resume/generate")
+    assert response.status_code == 409
+    assert client.post("/jobs/missing/resume/generate").status_code == 404
+
+
+def test_resume_ats_route(client, store, fake_llm):
+    _seed_accepted(store)
+    fake_llm([{"score": 84, "feedback": "Add Kafka.", "ready": False}])
+    response = client.post("/jobs/abc123def456/resume/ats")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ats_score"] == 84
+    assert len(store.get("abc123def456").metadata["ats"]["iterations"]) == 1
+    assert client.post("/jobs/missing/resume/ats").status_code == 404
+
+
+def test_resume_force_ready_route(client, store):
+    _seed_accepted(store)
+    response = client.post("/jobs/abc123def456/resume/force-ready")
+    assert response.status_code == 200
+    assert response.json()["status"] == "resume_ready"
+    assert store.get("abc123def456").status == JobStatus.RESUME_READY
+    # new -> resume_ready is not allowed by the transition map.
+    _seed(store, job_id="newjob123456")
+    assert client.post("/jobs/newjob123456/resume/force-ready").status_code == 409
+    assert client.post("/jobs/missing/resume/force-ready").status_code == 404

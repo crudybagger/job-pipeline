@@ -4,9 +4,13 @@
 Current work focus, recent changes, next steps, and active decisions for the project.
 
 ## Current Work Focus
-**Stage 2 (Matching Resume Generation) + the shared `src/llm/` foundation are implemented mid-flight: all production code, API/CLI surfaces, config markers, and the LLD are in place; the full suite passes (115 tests). Remaining: the last test files (test_loop, test_stage2, api/cli/store additions), doc status notes, and the `LLM_API_KEY` .env secret before a real run.** LLD: `docs/design/stage2-lld.md`.
+**Stage 2 (Matching Resume Generation) wrap-up is complete: all production code, API/CLI surfaces, config markers, LLD, tests (155 passing), and docs are in place. Next: Stage 3 (cover letters) per `docs/design/stage3-cover-letter-generation.md`, or a real Stage-2 run once `LLM_API_KEY` is set in `job-pipeline/.env`.** LLD: `docs/design/stage2-lld.md`.
 
 ## Recent Changes
+- **`scripts/stage2_live.py` added** (manual live check mirroring `stage1_live.py`): batch/`--job-id`/`--single`/`--dry-run` Stage-2 runs against the real store + config, per-entry result/error reporting, resume-ready artifact listing. Verified in isolation: with `LLM_API_KEY` unset, `LLMError` is recorded per entry (entry status unchanged, no metadata writes) and printed gracefully. A root `.gitignore` was added (`/e/jobs/.venv` was untracked).
+- **Surface contract fixed (Stage 2 wrap-up)**: `POST /jobs/{id}/resume/generate` and the CLI `resume-generate` now surface the per-entry loop result directly (`{status, iterations, needs_review, score}`) instead of the batch summary — `run_stage2` keeps its uniform summary shape; the route maps `skipped` → 409 and `errors` → 500, the CLI raises to stderr/exit-1. Resolved the 4 failing tests (`test_resume_generate_route_{success,single_iteration}`, `test_resume_generate_command{,_single}`) without touching the passing `test_single_job_mode_processes_one` summary contract.
+- **`test_store.py` gained the LLD-required `update_metadata` coverage** (merge new keys, per-key wholesale replace, persistence across connections, unknown-id KeyError) — 4 tests; suite at 155.
+- **Stage 2 docs wrapped**: implementation-status note on `docs/design/stage2-resume-generation.md` (incl. the `metadata.ats` shape amendment); root README current-state note + Stage 2 section; job-pipeline README header/architecture/Stage-2 packages/`Using Stage 2`/test counts.
 - **Stage 2 LLD written** (`docs/design/stage2-lld.md`, 216 lines): module map, data flow, substage signatures, section-marker scheme (grounded in the real `data/Resume.tex`: `\begin{rSection}{...}` blocks + `\tableEnv{Skills}{...}` brace block), prompts, API/CLI surface, test plan. Resolved a design-doc conflict: `metadata.ats` is `{"iterations": [...], "needs_review": bool}` (the HLD described it both as a list and as holding `needs_review`).
 - **Shared foundation M2.5 built** (`src/llm/`): `provider.py` with `LLMClient` — OpenAI-compatible `/chat/completions` over httpx, JSON-mode via `response_format` + schema instruction when `schema` is given, retries on 429/5xx/network errors with linear backoff, `LLMError` when `LLM_API_KEY` is missing or retries exhaust; settable module seam `set_client()`/`get_client()`/`complete()` for tests and Stage 1's `llm` scorer slot. Settings from `.env`: `LLM_BASE_URL` (default `https://api.openai.com/v1`), `LLM_API_KEY`, `LLM_MODEL` (default `gpt-4o-mini`). **No new dependencies** (httpx + python-dotenv already present).
 - **Store extension**: `JobsStore.update_metadata(job_id, updates)` — merges stage-owned registry keys (`metadata.ats`, `metadata.resume`) wholesale; the round-trip surface substages need (store.save's existing-value-wins merge would discard stage results).
@@ -67,6 +71,7 @@ Current work focus, recent changes, next steps, and active decisions for the pro
 - **Version 1.0**: Initialized from repository context
 - **Version 1.1**: Stage 1 complete (LLD, implementation, 84 tests, live validation, re-tuning)
 - **Version 1.2**: Stage 2 + `src/llm/` foundation mid-flight (code, surfaces, configs, LLD, 31 new tests; 115 passing)
+- **Version 1.3**: Stage 2 wrap-up complete (surface contract fix, store tests, docs; 155 passing)
 
 ## Notes
 - The ATS substage notes round-trip through `metadata.ats` so Stage 2 picks them back up (per plan.md) — implemented via `JobsStore.update_metadata` + the loop's feedback re-seeding.

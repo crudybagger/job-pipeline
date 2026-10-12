@@ -202,14 +202,24 @@ async def stage2_run(limit: int | None = None, dry_run: bool = False):
 
 @app.post("/jobs/{job_id}/resume/generate")
 async def resume_generate(job_id: str, run_to_completion: bool = True):
-    """Run the Stage-2 loop for one accepted job (generate -> ATS -> re-edit)."""
+    """Run the Stage-2 loop for one accepted job (generate -> ATS -> re-edit).
+
+    Single-entry mode surfaces the per-entry loop result directly
+    (docs/design/stage2-lld.md): 404 unknown id, 409 not accepted or a
+    skipped base-resume resolution, 500 on a recorded per-entry error.
+    """
     try:
-        return run_stage2(store=get_store(), job_id=job_id,
-                          run_to_completion=run_to_completion)
+        summary = run_stage2(store=get_store(), job_id=job_id,
+                             run_to_completion=run_to_completion)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if summary["skipped"]:
+        raise HTTPException(status_code=409, detail=summary["skipped"][0]["reason"])
+    if summary["errors"]:
+        raise HTTPException(status_code=500, detail=summary["errors"][0]["error"])
+    return summary["results"][0]
 
 
 @app.post("/jobs/{job_id}/resume/ats")

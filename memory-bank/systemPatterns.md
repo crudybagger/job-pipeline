@@ -56,7 +56,7 @@ Planned queues (per `plan.md`): accepted, rejected, resume-ready, sent — all i
 ## Component Relationships
 - `app/main.py` imports from `src.ingestion.ingest` (repo-root-relative `src` package; tests run from `job-pipeline/`).
 - `automation.run_issue_loop` → `automation.issue_tracker.run_once` → `process_open_issues()` → `plan_issue`/`implement_task`/`save_issues` → optional `git_commit_and_push`.
-- Test environment: pytest from `job-pipeline/` (3 tests pass).
+- Test environment: pytest from `job-pipeline/` (155 tests pass).
 
 ## Critical Implementation Paths
 - Stage 1 (**done**): real scraping in `src/ingestion/ingest.py` + normalization in `src/parsing/parse.py`; scoring in `src/matching/match.py` (location gate + re-tunable weights); persistent queues in `src/queues/store.py` (SQLite, transition map) + tooling in `src/queues/cli.py`; orchestrator `src/stage1.py` shared by the API (`app/main.py`) and the CLI.

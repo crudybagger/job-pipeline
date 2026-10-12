@@ -2,6 +2,15 @@
 
 Design plan for **Stage 2** of the Job Finder and Application Pipeline (see `plan.md` at repo root for the source-of-truth blueprint). Reference implementation plan for Milestone 3. Builds on Stage 1 (`./stage1-job-scraping-and-filtering.md`) and the cross-stage contract (`./pipeline-integration.md`) — the accepted queue, SQLite store, config layer, job IDs, metadata registry, and tooling patterns are defined there and reused here.
 
+> **Implementation status (Stage 2 complete):** implemented per `./stage2-lld.md` —
+> `src/resume/{generate,ats,loop,stage2}.py` on the shared `src/llm/` provider; API routes
+> `POST /stage2/run` and `/jobs/{id}/resume/{generate,ats,force-ready}`; CLI subcommands
+> `resume-generate|resume-ats|resume-force-ready|resume-run`; config knobs
+> `stage2.{ats_ready_threshold,max_iterations,latex_section_markers}`; 155 passing tests
+> (no live network). **Amendment:** `metadata.ats` is `{"iterations": [...], "needs_review": bool}`
+> — this doc described it both as a list and as holding `needs_review`; resolved in the LLD
+> (§7). Real (non-test) runs require `LLM_API_KEY` in `job-pipeline/.env`.
+
 ## Scope
 
 Generate bulletpoints, skills, and summary for the candidate from a job description: minimally edit an existing LaTeX resume, then run an independent ATS-like substage that scores the result and loops until ready. Operates only on `accepted` entries from the Stage 1 queue.

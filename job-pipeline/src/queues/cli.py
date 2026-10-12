@@ -183,7 +183,11 @@ def main(argv: list[str] | None = None) -> int:
                 job_id=args.job_id,
                 run_to_completion=not args.single,
             )
-            print(json.dumps(summary, indent=2))
+            if summary["skipped"]:
+                raise ValueError(summary["skipped"][0]["reason"])
+            if summary["errors"]:
+                raise ValueError(summary["errors"][0]["error"])
+            print(json.dumps(summary["results"][0], indent=2))
         elif args.command == "resume-ats":
             config = load_config(args.config_path)
             print(json.dumps(run_ats_substage(store, args.job_id, config), indent=2))
